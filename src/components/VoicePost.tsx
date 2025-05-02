@@ -115,7 +115,7 @@ const handleShare = (platform: string) => {
 };
 
 const handleCopyLink = () => {
-  navigator.clipboard.writeText(`https://vocalexpress.app/post/${id}`);
+  navigator.clipboard.writeText(`https://vocal-echo-social-frontend.vercel.app/post/${id}`);
   toast({
     title: "Lien copié",
     description: "Le lien a été copié dans votre presse-papiers.",

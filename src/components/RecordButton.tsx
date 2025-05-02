@@ -56,7 +56,7 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
         formData.append("audioDuration", duration.toFixed(2)); // envoyer avec 2 décimales
 
         try {
-          await axios.post("http://localhost:5000/api/posts", formData, {
+          await axios.post("https://vocal-echo-social-backend.onrender.com/api/posts", formData, {
             headers: {
               Authorization: `Bearer ${token}`,
               "Content-Type": "multipart/form-data",

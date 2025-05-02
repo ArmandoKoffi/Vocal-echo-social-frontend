@@ -26,7 +26,7 @@ const Index = () => {
   const fetchPosts = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get("http://localhost:5000/api/posts", {
+      const response = await axios.get("https://vocal-echo-social-backend.onrender.com/api/posts", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

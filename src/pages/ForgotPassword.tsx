@@ -30,7 +30,7 @@ const ForgotPassword = () => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/forgot-password', { email });
+      const response = await axios.post('https://vocal-echo-social-backend.onrender.com/api/auth/forgot-password', { email });
 
       toast({
         title: "Email envoyé",

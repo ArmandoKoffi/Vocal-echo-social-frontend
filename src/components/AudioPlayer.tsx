@@ -58,7 +58,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
       } else if (audioUrl.startsWith("/")) {
         // S'assurer que nous avons l'URL du serveur backend
         // Si vous utilisez un serveur backend différent, modifiez cette URL
-        const backendUrl = "http://localhost:5000"; // À adapter selon votre configuration
+        const backendUrl = "https://vocal-echo-social-backend.onrender.com"; // À adapter selon votre configuration
         fixedAudioUrl = `${backendUrl}${audioUrl}?t=${Date.now()}`;
       } else {
         // Fallback au cas où
