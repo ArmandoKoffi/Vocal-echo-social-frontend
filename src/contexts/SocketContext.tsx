@@ -37,7 +37,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (isAuthenticated && userId) {
       // Créer la connexion socket
-      const newSocket = io("http://localhost:5000", {
+      const newSocket = io("https://vocal-echo-social-backend.onrender.com", {
         transports: ["websocket"],
         autoConnect: true,
       });
