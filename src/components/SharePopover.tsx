@@ -162,6 +162,7 @@ const SharePopover: React.FC<SharePopoverProps> = ({ postId }) => {
               type="text"
               value={`${window.location.origin}/post/${postId}`}
               readOnly
+              placeholder="Lien du post"
               className="flex-1 bg-transparent border-none text-xs focus:outline-none p-0"
             />
             <Button

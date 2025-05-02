@@ -37,6 +37,7 @@ const Login = () => {
           navigate("/"); // Redirection normale pour les autres utilisateurs
         }
       }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast({
         title: "Échec de la connexion",

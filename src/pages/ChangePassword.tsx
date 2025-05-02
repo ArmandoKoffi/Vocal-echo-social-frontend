@@ -138,6 +138,7 @@ const ChangePassword = () => {
         // Redirection vers la page des paramètres
         navigate("/settings");
       }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message || "Une erreur est survenue";
