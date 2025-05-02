@@ -1,0 +1,197 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+
+    /* Voicify custom colors */
+    --voicify-orange: 25 95% 53%;
+    --voicify-blue: 221.2 83.2% 53.3%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+
+    /* Dark mode custom card backgrounds */
+    --card-gradient-start: 220 40% 12%;
+    --card-gradient-end: 222 45% 7%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .animate-entrance {
+    animation: fadeInUp 0.5s ease-out forwards;
+  }
+
+  .transition-color {
+    @apply transition-colors duration-200;
+  }
+
+  /* Waveform animation */
+  .waveform-bar {
+    @apply bg-voicify-orange dark:bg-voicify-orange rounded-full;
+    animation: waveform-animation 1.5s ease-in-out infinite;
+  }
+
+  /* Improved dark mode card */
+  .dark-card {
+    @apply dark:bg-gradient-to-b dark:from-gray-800 dark:to-gray-900 dark:border-gray-700 dark:shadow-lg dark:shadow-gray-900/30;
+  }
+
+  /* Improved dark mode inputs */
+  .dark-input {
+    @apply dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 dark:placeholder-gray-400;
+  }
+
+  /* Audio visualization container */
+  .audio-wave-container {
+    @apply h-12 bg-gray-50 dark:bg-gray-800 rounded-lg p-2 flex items-center gap-[2px] overflow-hidden;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes waveform-animation {
+  0%, 100% {
+    transform: scaleY(0.5);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* Equalizer animation for audio player */
+.equalizer-container {
+  @apply flex items-end h-5 gap-[3px];
+}
+
+.equalizer-bar {
+  width: 3px;
+  background-color: hsl(var(--voicify-orange));
+  border-radius: 1px;
+  animation: equalize 1s ease-in-out infinite;
+}
+
+.equalizer-bar:nth-child(1) {
+  height: 60%;
+  animation-delay: 0.1s;
+}
+
+.equalizer-bar:nth-child(2) {
+  height: 90%;
+  animation-delay: 0.3s;
+}
+
+.equalizer-bar:nth-child(3) {
+  height: 70%;
+  animation-delay: 0.5s;
+}
+
+.equalizer-bar:nth-child(4) {
+  height: 40%;
+  animation-delay: 0.7s;
+}
+
+@keyframes equalize {
+  0%, 100% {
+    height: 30%;
+  }
+  50% {
+    height: 100%;
+  }
+}
+
+/* Enhanced dark mode styles */
+.dark .dark-enhanced {
+  background: linear-gradient(to bottom, hsl(var(--card-gradient-start)), hsl(var(--card-gradient-end)));
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.dark .dark-button {
+  @apply bg-gradient-to-br from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 border border-gray-600;
+}
+
+/* Responsive wave visualization */
+@media (max-width: 640px) {
+  .waveform-bar {
+    width: 2px;
+    margin-right: 1px;
+  }
+
+  .audio-wave-container {
+    height: 10px;
+  }
+}
+
+/* Audioplayer dark mode improvements */
+.dark .audio-player-controls {
+  @apply bg-gray-800 text-gray-200;
+}
+
+.dark .audio-wave {
+  @apply bg-gray-900;
+}
+
+.dark .audio-timeline {
+  @apply bg-gray-700;
+}
