@@ -37,6 +37,15 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   const waveformBars = 32;
 
+  const testAudioUrl = async (url: string): Promise<boolean> => {
+    try {
+      const response = await fetch(url, { method: 'HEAD' });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  };
+
   const handlePlayPause = async () => {
     if (!audioRef.current) return;
 
@@ -51,53 +60,86 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
       setIsLoading(true);
 
-      // Vérifier si l'URL est déjà absolue
-      let fixedAudioUrl;
-      if (audioUrl.startsWith("http")) {
-        fixedAudioUrl = audioUrl;
-      } else if (audioUrl.startsWith("/")) {
-        // S'assurer que nous avons l'URL du serveur backend
-        // Si vous utilisez un serveur backend différent, modifiez cette URL
-        const backendUrl = "https://vocal-echo-social-backend.onrender.com"; // À adapter selon votre configuration
-        fixedAudioUrl = `${backendUrl}${audioUrl}?t=${Date.now()}`;
-      } else {
-        // Fallback au cas où
-        fixedAudioUrl = `${window.location.origin}/${audioUrl}?t=${Date.now()}`;
+      // Vérifier et corriger l'URL audio
+      let fixedAudioUrl = audioUrl;
+      
+      // Si l'URL est relative, ajouter le domaine du backend
+      if (!audioUrl.startsWith("http") && !audioUrl.startsWith("blob:")) {
+        const backendUrl = "https://vocal-echo-social-backend.onrender.com";
+        fixedAudioUrl = `${backendUrl}${audioUrl.startsWith("/") ? "" : "/"}${audioUrl}`;
       }
 
-      console.log("Tentative de chargement audio avec URL:", fixedAudioUrl);
+      // Vérifier que l'URL est accessible
+      const isUrlValid = await testAudioUrl(fixedAudioUrl);
+      if (!isUrlValid) {
+        throw new Error("Audio file not found or inaccessible");
+      }
 
-      // Création d'un nouvel élément audio
-      const newAudio = new Audio(fixedAudioUrl);
+      // Créer un nouvel élément audio
+      const newAudio = new Audio();
       newAudio.preload = "auto";
       newAudio.volume = isMuted ? 0 : volume;
+      newAudio.src = fixedAudioUrl;
 
-      // Remplacement de l'ancien élément
+      // Configurer les gestionnaires d'événements
+      newAudio.onerror = () => {
+        const error = newAudio.error;
+        let errorMessage = "Erreur de lecture audio";
+        
+        if (error) {
+          switch(error.code) {
+            case MediaError.MEDIA_ERR_ABORTED:
+              errorMessage = "Lecture annulée";
+              break;
+            case MediaError.MEDIA_ERR_NETWORK:
+              errorMessage = "Erreur réseau";
+              break;
+            case MediaError.MEDIA_ERR_DECODE:
+              errorMessage = "Format audio non supporté";
+              break;
+            case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+              errorMessage = "Source audio non supportée";
+              break;
+            default:
+              errorMessage = `Erreur audio (code ${error.code})`;
+          }
+        }
+        setError(errorMessage);
+        setIsLoading(false);
+      };
+
+      newAudio.ontimeupdate = () => {
+        if (newAudio) setCurrentTime(newAudio.currentTime);
+      };
+
+      newAudio.onloadedmetadata = () => {
+        if (newAudio) setDuration(newAudio.duration);
+      };
+
+      newAudio.onended = () => {
+        setIsPlaying(false);
+        setCurrentTime(0);
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+      };
+
+      // Remplacer l'ancien élément audio
       if (audioRef.current) {
-        // Sauvegarde des événements existants
-        const events = {
-          timeupdate: audioRef.current.ontimeupdate,
-          loadedmetadata: audioRef.current.onloadedmetadata,
-          ended: audioRef.current.onended,
-          error: audioRef.current.onerror
-        };
-
         audioRef.current.replaceWith(newAudio);
-        audioRef.current = newAudio;
+      }
+      audioRef.current = newAudio;
 
-        // Réattachement des événements
-        newAudio.ontimeupdate = events.timeupdate;
-        newAudio.onloadedmetadata = events.loadedmetadata;
-        newAudio.onended = events.ended;
-        newAudio.onerror = (e) => {
-          console.error("Erreur audio:", e);
-          setError("Impossible de lire le fichier audio. Vérifiez le chemin du fichier.");
-          setIsLoading(false);
-          if (events.error) events.error(e);
-        };
+      // Initialiser l'analyseur audio si nécessaire
+      if (showEqualizer && !sourceRef.current && audioRef.current && audioContextRef.current) {
+        sourceRef.current = audioContextRef.current.createMediaElementSource(audioRef.current);
+        analyserRef.current = audioContextRef.current.createAnalyser();
+        analyserRef.current.fftSize = 256;
+        sourceRef.current.connect(analyserRef.current);
+        analyserRef.current.connect(audioContextRef.current.destination);
       }
 
-      // Lecture
+      // Lancer la lecture
       await newAudio.play();
       setIsPlaying(true);
       setIsLoading(false);
@@ -110,7 +152,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     }
   };
 
-  // Autres fonctions restent inchangées...
   const handleTimeUpdate = () => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -151,24 +192,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     setVolume(newVolume);
     audio.volume = newVolume;
 
-    if (newVolume=== 0) {
+    if (newVolume === 0) {
       setIsMuted(true);
     } else if (isMuted) {
       setIsMuted(false);
-    }
-  };
-
-  const handleEnded = () => {
-    setIsPlaying(false);
-    setCurrentTime(0);
-
-    const audio = audioRef.current;
-    if (audio) {
-      audio.currentTime = 0;
-    }
-
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
     }
   };
 
@@ -210,23 +237,20 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   };
 
   useEffect(() => {
-    console.log("Audio URL:", audioUrl);
     generateStaticWaveform();
 
-    // Initialiser l'AudioContext uniquement lorsque l'utilisateur interagit avec la page
+    // Initialiser l'AudioContext au premier clic utilisateur
     const initAudioContext = () => {
       if (!audioContextRef.current) {
         try {
-          audioContextRef.current = new (window.AudioContext ||
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (window as any).webkitAudioContext)();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
         } catch (error) {
           console.error("Web Audio API not supported", error);
         }
       }
     };
 
-    // Écouter les événements de clic pour débloquer l'AudioContext
     document.addEventListener("click", initAudioContext, { once: true });
 
     return () => {
@@ -238,10 +262,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
         sourceRef.current.disconnect();
       }
 
-      if (
-        audioContextRef.current &&
-        audioContextRef.current.state !== "closed"
-      ) {
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
         audioContextRef.current.close();
       }
 
@@ -284,7 +305,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
       default:
         return {
           container: "p-3",
-          playButton: "h-10 w-10", iconSize: 20,
+          playButton: "h-10 w-10",
+          iconSize: 20,
           showTime: true,
           progressHeight: "h-2",
           waveformHeight: "h-12",
@@ -300,19 +322,46 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     >
       <audio
         ref={audioRef}
-        preload="auto"
+        preload="none"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
-        onEnded={handleEnded}
+        onEnded={() => {
+          setIsPlaying(false);
+          setCurrentTime(0);
+        }}
         onError={(e) => {
-          console.error("Erreur de lecture audio:", e);
-          setError(
-            "Impossible de charger l'audio. Vérifiez le format du fichier ou l'URL."
-          );
+          console.error("Audio error details:", e);
+          const error = audioRef.current?.error;
+          let errorMessage = "Erreur de lecture audio";
+          
+          if (error) {
+            switch(error.code) {
+              case MediaError.MEDIA_ERR_ABORTED:
+                errorMessage = "Lecture annulée";
+                break;
+              case MediaError.MEDIA_ERR_NETWORK:
+                errorMessage = "Erreur réseau";
+                break;
+              case MediaError.MEDIA_ERR_DECODE:
+                errorMessage = "Format audio non supporté";
+                break;
+              case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                errorMessage = "Source audio non supportée";
+                break;
+              default:
+                errorMessage = `Erreur audio (code ${error.code})`;
+            }
+          }
+          setError(errorMessage);
+          setIsLoading(false);
         }}
       />
 
-      {error && <div className="text-red-500 text-sm mb-2">{error}</div>}
+      {error && (
+        <div className="text-red-500 text-sm mb-2">
+          {error} - URL: {audioUrl}
+        </div>
+      )}
 
       <div className="flex items-center gap-2">
         <PlayPauseButton
@@ -337,26 +386,20 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
             height={sizeClasses.progressHeight}
             showTime={sizeClasses.showTime}
             currentTime={currentTime}
-            duration={duration}
-            onProgressChange={function (percent: number): void {
+            duration={duration} onProgressChange={function (percent: number): void {
               throw new Error("Function not implemented.");
-            }}
-            progressHeight={""}
-            onClick={function (e: React.MouseEvent<HTMLDivElement>): void {
+            } } progressHeight={""} onClick={function (e: React.MouseEvent<HTMLDivElement>): void {
               throw new Error("Function not implemented.");
-            }}
-          />
+            } }          />
         </div>
 
         <VolumeControl
           isMuted={isMuted}
           volume={volume}
           onToggleMute={handleVolumeToggle}
-          onVolumeChange={handleVolumeChange}
-          onVolumeToggle={function (): void {
+          onVolumeChange={handleVolumeChange} onVolumeToggle={function (): void {
             throw new Error("Function not implemented.");
-          }}
-        />
+          } }        />
       </div>
     </div>
   );
