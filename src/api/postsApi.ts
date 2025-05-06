@@ -67,13 +67,29 @@ export const createPost = async (data: CreatePostRequest) => {
   return response.data.data;
 };
 
-export const updatePost = async (postId: string, data: FormData | { description: string }) => {
-  const headers = data instanceof FormData 
-    ? { "Content-Type": "multipart/form-data" } 
-    : { "Content-Type": "application/json" };
+export const updatePost = async (
+  postId: string,
+  data: FormData | { description: string }
+) => {
+  try {
+    const headers =
+      data instanceof FormData
+        ? { "Content-Type": "multipart/form-data" }
+        : { "Content-Type": "application/json" };
 
-  const response = await api.put(`/posts/${postId}`, data, { headers });
-  return response.data.data;
+    const response = await api.put(`/posts/${postId}`, data, { headers });
+
+    if (!response.data?.success) {
+      throw new Error(response.data?.message || "Échec de la mise à jour");
+    }
+
+    return response.data.data;
+  } catch (error) {
+    console.error("Error updating post:", error);
+    throw new Error(
+      error.response?.data?.message || "Problème lors de la mise à jour du post"
+    );
+  }
 };
 
 export const likePost = async (postId: string) => {
