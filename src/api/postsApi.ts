@@ -2,7 +2,6 @@ import api from "./authApi";
 
 // Types
 export interface Post {
-  waveformData: number[];
   id: string;
   userId: string;
   username: string;
@@ -57,9 +56,7 @@ export const createPost = async (data: CreatePostRequest) => {
   formData.append("audio", data.audio);
 
   const response = await api.post("/posts", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+    headers: { "Content-Type": "multipart/form-data" },
   });
   return response.data.data;
 };
@@ -85,15 +82,19 @@ export const likePost = async (postId: string) => {
   }
 };
 
-export const commentOnPost = async (postId: string, data: FormData | { content: string }) => {
-  try {
-    const headers = data instanceof FormData ? { "Content-Type": "multipart/form-data" } : { "Content-Type": "application/json" };
-    const response = await api.post(`/posts/${postId}/comment`, data, { headers });
-    return response.data.data;
-  } catch (error) {
-    console.error("Erreur lors de l'ajout du commentaire :", error);
-    throw error;
-  }
+export const commentOnPost = async (
+  postId: string,
+  data: FormData | { content: string }
+) => {
+  const headers =
+    data instanceof FormData
+      ? { "Content-Type": "multipart/form-data" }
+      : { "Content-Type": "application/json" };
+
+  const response = await api.post(`/posts/${postId}/comment`, data, {
+    headers,
+  });
+  return response.data.data;
 };
 
 export const deletePost = async (postId: string) => {

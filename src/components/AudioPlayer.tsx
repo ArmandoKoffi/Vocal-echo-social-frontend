@@ -37,14 +37,17 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   const waveformBars = 32;
 
-  const testAudioUrl = async (url: string): Promise<boolean> => {
-    try {
-      const response = await fetch(url, { method: 'HEAD' });
-      return response.ok;
-    } catch {
-      return false;
-    }
-  };
+const testAudioUrl = async (url: string): Promise<boolean> => {
+  // Si URL Cloudinary, pas besoin de vérifier
+  if (url.includes("res.cloudinary.com")) return true;
+
+  try {
+    const response = await fetch(url, { method: "HEAD" });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
 
   const handlePlayPause = async () => {
     if (!audioRef.current) return;
@@ -65,8 +68,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
       
       // Si l'URL est relative, ajouter le domaine du backend
       if (!audioUrl.startsWith("http") && !audioUrl.startsWith("blob:")) {
-        const backendUrl = "https://vocal-echo-social-backend.onrender.com";
-        fixedAudioUrl = `${backendUrl}${audioUrl.startsWith("/") ? "" : "/"}${audioUrl}`;
+        fixedAudioUrl = `https://vocal-echo-social-backend.onrender.com${audioUrl}`;
       }
 
       // Vérifier que l'URL est accessible

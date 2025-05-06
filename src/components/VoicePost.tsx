@@ -135,48 +135,28 @@ const handleReport = () => {
   setIsReportDialogOpen(true);
 };
 
-const handleCommentAdded = async (comment: Comment & { audioFile?: File }) => {
-  // Mise à jour optimiste avec ID temporaire
-  const tempComment = {
-    ...comment,
-    id: "temp-" + Date.now(),
-  };
-  try {
-    setPostComments((prev) => [...prev, tempComment]);
-
-    // Préparer les données pour l'API
+  const handleCommentAdded = async (
+    comment: Comment & { audioFile?: File }
+  ) => {
     const formData = new FormData();
-    if (comment.content) {
-      formData.append("content", comment.content);
-    }
+    if (comment.content) formData.append("content", comment.content);
     if (comment.audioFile) {
       formData.append("audio", comment.audioFile);
       formData.append("audioDuration", String(comment.audioDuration || 0));
     }
 
-    // Appel API
-    const result = await commentOnPost(id, formData);
-
-    // Remplacement par la vraie donnée
-    setPostComments((prev) =>
-      prev.map((c) => (c.id === tempComment.id ? result : c))
-    );
-
-    // Notification au parent
-    onCommentAdded?.(result);
-  } catch (error) {
-    // Rollback
-    setPostComments((prev) =>
-      prev.filter((c) => c.id !== tempComment.id)
-    );
-    toast({
-      title: "Erreur",
-      description: error.message
-    });
-  }
-};
-
-
+    try {
+      const result = await commentOnPost(id, formData);
+      setPostComments((prev) => [...prev, result]);
+      onCommentAdded?.(result);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
 return (
   <motion.div
