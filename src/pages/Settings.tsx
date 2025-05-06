@@ -80,9 +80,8 @@ const handleSaveProfile = async (e: React.FormEvent) => {
 
     toast({
       title: "Profil mis à jour",
-      description: "Votre profil a été mise à jour avec succès",
+      description: "Votre profil a été mis à jour avec succès",
     });
-
   } catch (error: any) {
     toast({
       title: "Erreur",

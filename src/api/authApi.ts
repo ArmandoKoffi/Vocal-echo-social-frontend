@@ -108,7 +108,7 @@ export const updateProfile = async (data: FormData) => {
     });
     return response.data;
   } catch (error) {
-    console.error("Erreur lors de la mise à jour du profil:", error);
+    console.error("Erreur mise à jour profil:", error);
     throw error;
   }
 };
