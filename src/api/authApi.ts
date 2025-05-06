@@ -1,8 +1,7 @@
+
 import axios from "axios";
 
-const API_URL = "https://vocal-echo-social-backend.onrender.com/api"; 
-
-// Configuration d'Axios 
+const API_URL = "https://vocal-echo-social-backend.onrender.com/api";
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -10,10 +9,10 @@ const api = axios.create({
   },
 });
 
-// Interceptor pour ajouter le token aux requêtes
 api.interceptors.request.use(
   (config) => {
-     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const token =
+      localStorage.getItem("token") || sessionStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -76,6 +75,16 @@ export const register = async (data: RegisterRequest) => {
     return response.data;
   } catch (error) {
     console.error("Erreur d'inscription:", error);
+    throw error;
+  }
+};
+
+export const resetAvatar = async () => {
+  try {
+    const response = await api.put("/auth/reset-avatar");
+    return response.data;
+  } catch (error) {
+    console.error("Erreur reset avatar:", error);
     throw error;
   }
 };
