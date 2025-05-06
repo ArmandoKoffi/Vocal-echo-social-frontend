@@ -11,6 +11,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useAuth } from "@/contexts/AuthContext"; // Importez votre contexte d'authentification
 
 interface PostHeaderProps {
   userId: string;
@@ -29,6 +30,9 @@ const PostHeader: React.FC<PostHeaderProps> = ({
   onDelete,
   onReport,
 }) => {
+  const { user } = useAuth(); // Récupérez l'utilisateur connecté depuis votre contexte
+  const isCurrentUserPost = user && user.id === userId; // Vérifiez si le post appartient à l'utilisateur
+
   const formattedTime = formatDistanceToNow(new Date(timestamp), {
     addSuffix: true,
     locale: fr,
@@ -56,7 +60,7 @@ const PostHeader: React.FC<PostHeaderProps> = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {userId === "current-user" ? (
+          {isCurrentUserPost ? (
             <>
               <DropdownMenuItem className="cursor-pointer">
                 <Pencil className="mr-2 h-4 w-4" />
@@ -84,4 +88,4 @@ const PostHeader: React.FC<PostHeaderProps> = ({
 };
 
 export default PostHeader;
- 
+
