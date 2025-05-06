@@ -80,6 +80,11 @@ const Index = () => {
       )
     );
   };
+  
+  const handlePostDeleted = (postId: string) => {
+    // Suppression optimiste du post de l'interface
+    setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
@@ -127,6 +132,7 @@ const Index = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: index * 0.1 }}
+                exit={{ opacity: 0, y: -20 }}
               >
                 <VoicePost
                   {...post}
@@ -134,6 +140,7 @@ const Index = () => {
                   onCommentAdded={(comment) =>
                     handleCommentAdded(post.id, comment)
                   }
+                  onPostDeleted={handlePostDeleted}
                 />
               </motion.div>
             ))}

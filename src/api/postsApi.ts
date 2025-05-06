@@ -98,6 +98,18 @@ export const commentOnPost = async (
 };
 
 export const deletePost = async (postId: string) => {
-  const response = await api.delete(`/posts/${postId}`);
-  return response.data;
+  try {
+    const response = await api.delete(`/posts/${postId}`);
+    
+    if (!response.data?.success) {
+      throw new Error(response.data?.message || "Échec de la suppression");
+    }
+    
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || 
+      "Problème lors de la suppression du post"
+    );
+  }
 };

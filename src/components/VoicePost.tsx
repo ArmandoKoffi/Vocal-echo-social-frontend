@@ -9,7 +9,7 @@ import CommentList from "./post/CommentList";
 import ShareDialog from "./post/ShareDialog";
 import DeleteDialog from "./post/DeleteDialog";
 import ReportDialog from "./post/ReportDialog";
-import { likePost, commentOnPost } from "@/api/postsApi";
+import { likePost, commentOnPost, deletePost } from "@/api/postsApi";
 
 export interface Comment {
   id: string;
@@ -40,6 +40,7 @@ export interface VoicePostProps {
     newHasLiked: boolean
   ) => void;
   onCommentAdded?: (comment: Comment) => void;
+  onPostDeleted?: (postId: string) => void;
 }
 
 const VoicePost: React.FC<VoicePostProps> = ({
@@ -56,6 +57,7 @@ const VoicePost: React.FC<VoicePostProps> = ({
   hasLiked,
   onLikeUpdate,
   onCommentAdded,
+  onPostDeleted,
 }) => {
   const [isLiked, setIsLiked] = useState(hasLiked);
   const [likesCount, setLikesCount] = useState(likes);
@@ -65,6 +67,7 @@ const VoicePost: React.FC<VoicePostProps> = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
 const handleLike = async () => {
@@ -123,12 +126,33 @@ const handleCopyLink = () => {
   setIsShareDialogOpen(false);
 };
 
-const handleDelete = () => {
-  toast({
-    title: "Publication supprimée",
-    description: "Votre publication a été supprimée avec succès.",
-  });
-  setIsDeleteDialogOpen(false);
+const handleDelete = async () => {
+  if (isDeleting) return;
+  
+  setIsDeleting(true);
+  try {
+    await deletePost(id);
+    
+    toast({
+      title: "Publication supprimée",
+      description: "Votre publication a été supprimée avec succès.",
+    });
+    
+    // Notifier le parent que ce post a été supprimé
+    if (onPostDeleted) {
+      onPostDeleted(id);
+    }
+    
+    setIsDeleteDialogOpen(false);
+  } catch (error) {
+    toast({
+      title: "Erreur",
+      description: error.message || "Échec de la suppression du post",
+      variant: "destructive",
+    });
+  } finally {
+    setIsDeleting(false);
+  }
 };
 
 const handleReport = () => {
@@ -220,6 +244,7 @@ return (
       isOpen={isDeleteDialogOpen}
       onOpenChange={setIsDeleteDialogOpen}
       onDelete={handleDelete}
+      isDeleting={isDeleting}
     />
 
     <ReportDialog
