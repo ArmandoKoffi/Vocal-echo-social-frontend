@@ -38,6 +38,12 @@ export interface CreateCommentRequest {
   audio?: File;
 }
 
+export interface UpdatePostRequest {
+  description?: string;
+  audioDuration?: number;
+  audio?: File;
+}
+
 // Fonctions pour les posts
 export const getAllPosts = async () => {
   const response = await api.get("/posts");
@@ -61,11 +67,19 @@ export const createPost = async (data: CreatePostRequest) => {
   return response.data.data;
 };
 
+export const updatePost = async (postId: string, data: FormData | { description: string }) => {
+  const headers = data instanceof FormData 
+    ? { "Content-Type": "multipart/form-data" } 
+    : { "Content-Type": "application/json" };
+
+  const response = await api.put(`/posts/${postId}`, data, { headers });
+  return response.data.data;
+};
+
 export const likePost = async (postId: string) => {
   try {
     const response = await api.post(`/posts/${postId}/like`);
 
-    // Vérification renforcée
     if (!response.data?.success) {
       throw new Error(response.data?.message || "Action échouée");
     }

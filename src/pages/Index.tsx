@@ -82,8 +82,15 @@ const Index = () => {
   };
   
   const handlePostDeleted = (postId: string) => {
-    // Suppression optimiste du post de l'interface
     setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
+  };
+
+  const handlePostUpdated = (updatedPost: VoicePostProps) => {
+    setPosts((prevPosts) =>
+      prevPosts.map((post) =>
+        post.id === updatedPost.id ? updatedPost : post
+      )
+    );
   };
 
   return (
@@ -141,6 +148,7 @@ const Index = () => {
                     handleCommentAdded(post.id, comment)
                   }
                   onPostDeleted={handlePostDeleted}
+                  onPostUpdated={handlePostUpdated}
                 />
               </motion.div>
             ))}

@@ -11,7 +11,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useAuth } from "@/contexts/AuthContext"; // Importez votre contexte d'authentification
+import { useAuth } from "@/contexts/AuthContext";
 
 interface PostHeaderProps {
   userId: string;
@@ -20,6 +20,7 @@ interface PostHeaderProps {
   timestamp: string;
   onDelete: () => void;
   onReport: () => void;
+  onEdit: () => void;
 }
 
 const PostHeader: React.FC<PostHeaderProps> = ({
@@ -29,9 +30,10 @@ const PostHeader: React.FC<PostHeaderProps> = ({
   timestamp,
   onDelete,
   onReport,
+  onEdit,
 }) => {
-  const { user } = useAuth(); // Récupérez l'utilisateur connecté depuis votre contexte
-  const isCurrentUserPost = user && user.id === userId; // Vérifiez si le post appartient à l'utilisateur
+  const { user } = useAuth();
+  const isCurrentUserPost = user && user.id === userId;
 
   const formattedTime = formatDistanceToNow(new Date(timestamp), {
     addSuffix: true,
@@ -62,7 +64,7 @@ const PostHeader: React.FC<PostHeaderProps> = ({
         <DropdownMenuContent align="end">
           {isCurrentUserPost ? (
             <>
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem className="cursor-pointer" onClick={onEdit}>
                 <Pencil className="mr-2 h-4 w-4" />
                 <span>Modifier</span>
               </DropdownMenuItem>
@@ -88,4 +90,3 @@ const PostHeader: React.FC<PostHeaderProps> = ({
 };
 
 export default PostHeader;
-
