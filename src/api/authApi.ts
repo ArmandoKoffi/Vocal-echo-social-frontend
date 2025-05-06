@@ -105,11 +105,14 @@ export const updateProfile = async (data: FormData) => {
       headers: {
         "Content-Type": "multipart/form-data",
       },
+      transformRequest: (data) => data, // Important pour FormData
     });
     return response.data;
-  } catch (error) {
-    console.error("Erreur mise à jour profil:", error);
-    throw error;
+  } catch (error: any) {
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Erreur lors de la mise à jour du profil");
   }
 };
 
