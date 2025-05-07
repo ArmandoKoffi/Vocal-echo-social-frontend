@@ -4,20 +4,17 @@ import { useParams, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
-
-// Components
 import NavBar from "@/components/NavBar";
 import VoicePost from "@/components/VoicePost";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-
-// API & Hooks
-import { getNotification } from "@/api/notificationsApi";
-import { Post, Comment } from "@/api/postsApi";
+import { getNotification, markNotificationAsRead } from "@/api/notificationsApi";
 import { useToast } from "@/hooks/use-toast";
+import { useSocket } from "@/contexts/SocketContext";
 
 const NotificationDetail = () => {
   const { id } = useParams();
   const { toast } = useToast();
+  const { setUnreadNotificationsCount } = useSocket();
   const [notification, setNotification] = useState<any | null>(null);
   const [post, setPost] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,27 +26,16 @@ const NotificationDetail = () => {
       try {
         setLoading(true);
         const data = await getNotification(id);
-
         setNotification(data);
 
+        // Marquer la notification comme lue
+        if (data && !data.read) {
+          await markNotificationAsRead(id);
+          setUnreadNotificationsCount(prev => Math.max(0, prev - 1));
+        }
+
         if (data.post) {
-          // Create a transformed post object for VoicePost component
           const postData = data.post;
-
-          // Transform API comments to VoicePost comments format
-          const transformedComments = postData.comments.map(
-            (comment: Comment) => ({
-              id: comment.id,
-              userId: comment.userId,
-              username: comment.username,
-              avatar: comment.avatar,
-              content: comment.content || "", // Ensure content is not undefined
-              audioUrl: comment.audioUrl,
-              audioDuration: comment.audioDuration,
-              timestamp: comment.timestamp,
-            })
-          );
-
           const transformedPost = {
             id: postData.id,
             userId: postData.userId,
@@ -57,17 +43,22 @@ const NotificationDetail = () => {
             avatar: postData.avatar,
             audioUrl: postData.audioUrl,
             audioDuration: postData.audioDuration || 0,
-            waveformData: Array.from(
-              { length: 40 },
-              () => Math.random() * 60 + 20
-            ),
+            waveformData: Array.from({ length: 40 }, () => Math.random() * 60 + 20),
             description: postData.description,
             timestamp: postData.timestamp,
             likes: postData.likes,
-            comments: transformedComments,
-            isLiked: postData.hasLiked, // Map hasLiked to isLiked
+            comments: postData.comments.map((comment: any) => ({
+              id: comment.id,
+              userId: comment.userId,
+              username: comment.username,
+              avatar: comment.avatar,
+              content: comment.content || "",
+              audioUrl: comment.audioUrl,
+              audioDuration: comment.audioDuration,
+              timestamp: comment.timestamp,
+            })),
+            isLiked: postData.hasLiked,
           };
-
           setPost(transformedPost);
         }
       } catch (error) {
@@ -83,12 +74,11 @@ const NotificationDetail = () => {
     };
 
     fetchNotificationDetails();
-  }, [id, toast]);
+  }, [id, toast, setUnreadNotificationsCount]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <NavBar />
-
       <div className="container mx-auto max-w-2xl px-4 py-6">
         <div className="mb-6">
           <Link

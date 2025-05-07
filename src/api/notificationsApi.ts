@@ -27,6 +27,11 @@ export const getAllNotifications = async () => {
   return response.data.data;
 };
 
+export const getUnreadNotificationsCount = async () => {
+  const response = await api.get("/notifications/unread-count");
+  return response.data.data.count;
+};
+
 export const markAllNotificationsAsRead = async () => {
   const response = await api.put("/notifications/read-all");
   return response.data;
@@ -37,7 +42,6 @@ export const markNotificationAsRead = async (notificationId: string) => {
   return response.data.data;
 };
 
-// Add the missing getNotification function
 export const getNotification = async (notificationId: string) => {
   const response = await api.get(`/notifications/${notificationId}`);
   return response.data.data;
@@ -47,4 +51,4 @@ export const deleteNotification = async (notificationId: string) => {
   const response = await api.delete(`/notifications/${notificationId}`);
   return response.data;
 };
- 
+

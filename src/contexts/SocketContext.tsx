@@ -9,16 +9,20 @@ import { io, Socket } from "socket.io-client";
 import { useAuth } from "./AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Notification } from "@/api/notificationsApi";
+import { useNavigate } from "react-router-dom";
 
 interface SocketContextProps {
-  socket: any;
   socket: Socket | null;
   isConnected: boolean;
+  unreadNotificationsCount: number;
+  setUnreadNotificationsCount: React.Dispatch<React.SetStateAction<number>>;
 }
 
 export const SocketContext = createContext<SocketContextProps>({
   socket: null,
   isConnected: false,
+  unreadNotificationsCount: 0,
+  setUnreadNotificationsCount: () => {},
 });
 
 export const useSocket = () => useContext(SocketContext);
@@ -28,15 +32,15 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  // On mémorise l'ID utilisateur pour éviter les recréations inutiles
   const userId = user?.id;
 
   useEffect(() => {
     if (isAuthenticated && userId) {
-      // Créer la connexion socket
       const newSocket = io("https://vocal-echo-social-backend.onrender.com", {
         transports: ["websocket"],
         autoConnect: true,
@@ -44,11 +48,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setSocket(newSocket);
 
-      // Événements socket
       newSocket.on("connect", () => {
         console.log("Socket connecté");
         setIsConnected(true);
-        newSocket.emit("join", userId); // Utilisation de userId mémorisé
+        newSocket.emit("join", userId);
       });
 
       newSocket.on("disconnect", () => {
@@ -57,26 +60,41 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       newSocket.on("notification", (notification: Notification) => {
+        console.log("Notification reçue:", notification);
+        setUnreadNotificationsCount(prev => prev + 1);
+        
         toast({
           title: `${notification.fromUser.username} ${notification.message}`,
           description: `il y a quelques secondes`,
           action: notification.postId ? (
-            <a href={`/notifications/${notification.id}`} className="underline">
+            <button 
+              onClick={() => navigate(`/notifications/${notification.id}`)}
+              className="underline"
+            >
               Voir
-            </a>
+            </button>
           ) : undefined,
         });
       });
 
-      // Nettoyer à la déconnexion
       return () => {
         newSocket.disconnect();
       };
     }
-  }, [isAuthenticated, userId, toast]); // Dépendances plus précises
+  }, [isAuthenticated, userId, toast, navigate]);
+
+  const contextValue = useMemo(
+    () => ({
+      socket,
+      isConnected,
+      unreadNotificationsCount,
+      setUnreadNotificationsCount,
+    }),
+    [socket, isConnected, unreadNotificationsCount]
+  );
 
   return (
-    <SocketContext.Provider value={{ socket, isConnected }}>
+    <SocketContext.Provider value={contextValue}>
       {children}
     </SocketContext.Provider>
   );
