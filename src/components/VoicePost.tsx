@@ -112,32 +112,39 @@ const VoicePost: React.FC<VoicePostProps> = ({
 
   const handleUpdatePost = async () => {
     if (isUpdating) return;
-    
+
     setIsUpdating(true);
     try {
       const formData = new FormData();
+
+      // Ajout de la description si modifiée
       if (editedDescription !== description) {
         formData.append("description", editedDescription);
       }
+
+      // Ajout du nouvel audio si fourni
       if (newAudioFile) {
         formData.append("audio", newAudioFile);
         formData.append("audioDuration", String(audioDuration || 0));
       }
 
+      console.log("Envoi de la requête de modification...");
       const updatedPost = await updatePost(id, formData);
-      
+
+      console.log("Post mis à jour avec succès:", updatedPost);
       if (onPostUpdated) {
         onPostUpdated(updatedPost);
       }
-      
+
       toast({
         title: "Post mis à jour",
         description: "Votre publication a été modifiée avec succès.",
       });
-      
+
       setIsEditing(false);
       setNewAudioFile(null);
     } catch (error) {
+      console.error("Erreur lors de la mise à jour:", error);
       toast({
         title: "Erreur",
         description: error.message || "Échec de la mise à jour du post",

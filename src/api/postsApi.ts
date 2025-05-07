@@ -72,12 +72,12 @@ export const updatePost = async (
   data: FormData | { description: string }
 ) => {
   try {
-    const headers =
+    const config =
       data instanceof FormData
-        ? { "Content-Type": "multipart/form-data" }
-        : { "Content-Type": "application/json" };
+        ? { transformRequest: (d) => d } // Laisser le navigateur gérer les headers pour FormData
+        : { headers: { "Content-Type": "application/json" } };
 
-    const response = await api.put(`/posts/${postId}`, data, { headers });
+    const response = await api.put(`/posts/${postId}`, data, config);
 
     if (!response.data?.success) {
       throw new Error(response.data?.message || "Échec de la mise à jour");
@@ -85,13 +85,18 @@ export const updatePost = async (
 
     return response.data.data;
   } catch (error) {
-    console.error("Error updating post:", error);
+    console.error("Error updating post:", {
+      message: error.message,
+      response: error.response?.data,
+      config: error.config,
+    });
+
     throw new Error(
-      error.response?.data?.message || "Problème lors de la mise à jour du post"
+      error.response?.data?.message ||
+        "Impossible de mettre à jour le post. Veuillez réessayer."
     );
   }
 };
-
 export const likePost = async (postId: string) => {
   try {
     const response = await api.post(`/posts/${postId}/like`);

@@ -4,9 +4,7 @@ import axios from "axios";
 const API_URL = "https://vocal-echo-social-backend.onrender.com/api";
 const api = axios.create({
   baseURL: API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  withCredentials: true
 });
 
 api.interceptors.request.use(
@@ -16,6 +14,12 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Ne pas écraser le Content-Type pour FormData
+    if (!(config.data instanceof FormData) && !config.headers["Content-Type"]) {
+      config.headers["Content-Type"] = "application/json";
+    }
+
     return config;
   },
   (error) => {
@@ -108,6 +112,7 @@ export const updateProfile = async (data: FormData) => {
       transformRequest: (data) => data, // Important pour FormData
     });
     return response.data;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error.response?.data?.message) {
       throw new Error(error.response.data.message);
