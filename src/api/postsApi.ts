@@ -161,9 +161,13 @@ export const searchPosts = async (query: string) => {
 
     return response.data.data;
   } catch (error) {
-    console.error("Error searching posts:", error);
-    throw new Error(
-      error.response?.data?.message || "Problème lors de la recherche des posts"
-    );
+    console.error("Error searching posts:", {
+      message: error.message,
+      response: error.response?.data,
+      config: error.config,
+    });
+
+    // Retourner un tableau vide au lieu de throw pour éviter de casser l'UI
+    return [];
   }
 };

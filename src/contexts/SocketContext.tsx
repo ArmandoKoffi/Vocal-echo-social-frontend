@@ -44,6 +44,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
       const newSocket = io("https://vocal-echo-social-backend.onrender.com", {
         transports: ["websocket"],
         autoConnect: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 20000,
       });
 
       setSocket(newSocket);

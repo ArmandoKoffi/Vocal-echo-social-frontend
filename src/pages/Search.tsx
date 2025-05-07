@@ -20,35 +20,34 @@ const Search = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      setPostResults([]);
-      setUserResults([]);
-      return;
-    }
+const handleSearch = async () => {
+  if (!searchQuery.trim()) {
+    setPostResults([]);
+    setUserResults([]);
+    return;
+  }
 
-    setIsSearching(true);
+  setIsSearching(true);
 
-    try {
-      // Recherche parallèle des posts et des utilisateurs
-      const [postsResponse, usersResponse] = await Promise.all([
-        searchPosts(searchQuery),
-        searchUsers(searchQuery)
-      ]);
-      
-      setPostResults(postsResponse || []);
-      setUserResults(usersResponse || []);
-    } catch (error) {
-      console.error("Erreur lors de la recherche:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible d'effectuer la recherche",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSearching(false);
-    }
-  };
+  try {
+    const [postsResponse, usersResponse] = await Promise.all([
+      searchPosts(searchQuery).catch(() => []), // Retourne un tableau vide en cas d'erreur
+      searchUsers(searchQuery).catch(() => []), // Idem
+    ]);
+
+    setPostResults(postsResponse || []);
+    setUserResults(usersResponse || []);
+  } catch (error) {
+    console.error("Erreur lors de la recherche:", error);
+    toast({
+      title: "Erreur",
+      description: "Impossible d'effectuer la recherche",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSearching(false);
+  }
+};
 
   const clearSearch = () => {
     setSearchQuery("");
