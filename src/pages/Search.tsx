@@ -1,33 +1,43 @@
 import React, { useState, useEffect } from "react";
 import NavBar from "@/components/NavBar";
 import VoicePost, { VoicePostProps } from "@/components/VoicePost";
-import RecordButton from "@/components/RecordButton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search as SearchIcon, X } from "lucide-react";
+import { Search as SearchIcon, X, User } from "lucide-react";
 import { motion } from "framer-motion";
-import api from "@/api/authApi";
 import { useToast } from "@/hooks/use-toast";
+import { searchPosts } from "@/api/postsApi";
+import { searchUsers, SearchResult } from "@/api/usersApi";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useNavigate } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<VoicePostProps[]>([]);
+  const [postResults, setPostResults] = useState<VoicePostProps[]>([]);
+  const [userResults, setUserResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
-      setSearchResults([]);
+      setPostResults([]);
+      setUserResults([]);
       return;
     }
 
     setIsSearching(true);
 
     try {
-      const response = await api.get(
-        `/posts/search?query=${encodeURIComponent(searchQuery)}`
-      );
-      setSearchResults(response.data.data || []);
+      // Recherche parallèle des posts et des utilisateurs
+      const [postsResponse, usersResponse] = await Promise.all([
+        searchPosts(searchQuery),
+        searchUsers(searchQuery)
+      ]);
+      
+      setPostResults(postsResponse || []);
+      setUserResults(usersResponse || []);
     } catch (error) {
       console.error("Erreur lors de la recherche:", error);
       toast({
@@ -42,12 +52,18 @@ const Search = () => {
 
   const clearSearch = () => {
     setSearchQuery("");
-    setSearchResults([]);
+    setPostResults([]);
+    setUserResults([]);
+  };
+
+  const navigateToUserProfile = (userId: string) => {
+    navigate(`/user/${userId}`);
   };
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
-      setSearchResults([]);
+      setPostResults([]);
+      setUserResults([]);
     }
   }, [searchQuery]);
 
@@ -107,34 +123,83 @@ const Search = () => {
           </div>
         </motion.div>
 
-        <motion.div
-          className="space-y-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          {searchResults.length > 0 ? (
-            <div className="space-y-4">
-              <h2 className="text-lg font-medium dark:text-white">
-                Résultats ({searchResults.length})
-              </h2>
-              {searchResults.map((post, index) => (
-                <motion.div
-                  key={post.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                >
-                  <VoicePost {...post} />
-                </motion.div>
-              ))}
-            </div>
-          ) : searchQuery.trim() !== "" && !isSearching ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              Aucun résultat trouvé pour "{searchQuery}"
-            </div>
-          ) : null}
-        </motion.div>
+        {(postResults.length > 0 || userResults.length > 0) && (
+          <Tabs defaultValue="posts" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="posts">
+                Notes vocales ({postResults.length})
+              </TabsTrigger>
+              <TabsTrigger value="users">
+                Utilisateurs ({userResults.length})
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="posts">
+              {postResults.length > 0 ? (
+                <div className="space-y-4">
+                  {postResults.map((post, index) => (
+                    <motion.div
+                      key={post.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                    >
+                      <VoicePost {...post} />
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  Aucune note vocale trouvée pour "{searchQuery}"
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="users">
+              {userResults.length > 0 ? (
+                <div className="space-y-4">
+                  {userResults.map((user, index) => (
+                    <motion.div
+                      key={user._id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                      className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+                      onClick={() => navigateToUserProfile(user._id)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={user.avatar} alt={user.username} />
+                          <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h3 className="font-medium dark:text-white">{user.username}</h3>
+                          {user.bio && (
+                            <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{user.bio}</p>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  Aucun utilisateur trouvé pour "{searchQuery}"
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        )}
+
+        {searchQuery.trim() !== "" && !isSearching && postResults.length === 0 && userResults.length === 0 && (
+          <motion.div
+            className="text-center py-8 text-gray-500 dark:text-gray-400"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            Aucun résultat trouvé pour "{searchQuery}"
+          </motion.div>
+        )}
       </div>
     </div>
   );

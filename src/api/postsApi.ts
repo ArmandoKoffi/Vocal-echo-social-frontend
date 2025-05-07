@@ -148,3 +148,22 @@ export const deletePost = async (postId: string) => {
     );
   }
 };
+
+export const searchPosts = async (query: string) => {
+  try {
+    const response = await api.get(
+      `/posts/search?query=${encodeURIComponent(query)}`
+    );
+
+    if (!response.data?.success) {
+      throw new Error(response.data?.message || "Échec de la recherche");
+    }
+
+    return response.data.data;
+  } catch (error) {
+    console.error("Error searching posts:", error);
+    throw new Error(
+      error.response?.data?.message || "Problème lors de la recherche des posts"
+    );
+  }
+};
