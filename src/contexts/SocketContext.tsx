@@ -16,6 +16,7 @@ interface SocketContextProps {
   isConnected: boolean;
   unreadNotificationsCount: number;
   setUnreadNotificationsCount: React.Dispatch<React.SetStateAction<number>>;
+  onlineUsers: string[];
 }
 
 export const SocketContext = createContext<SocketContextProps>({
@@ -23,6 +24,7 @@ export const SocketContext = createContext<SocketContextProps>({
   isConnected: false,
   unreadNotificationsCount: 0,
   setUnreadNotificationsCount: () => {},
+  onlineUsers: [],
 });
 
 export const useSocket = () => useContext(SocketContext);
@@ -33,6 +35,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -57,6 +60,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log("Socket connecté");
         setIsConnected(true);
         newSocket.emit("join", userId);
+        newSocket.emit("getOnlineUsers"); // Demande la liste des utilisateurs en ligne
       });
 
       newSocket.on("disconnect", () => {
@@ -66,13 +70,13 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
 
       newSocket.on("notification", (notification: Notification) => {
         console.log("Notification reçue:", notification);
-        setUnreadNotificationsCount(prev => prev + 1);
-        
+        setUnreadNotificationsCount((prev) => prev + 1);
+
         toast({
           title: `${notification.fromUser.username} ${notification.message}`,
           description: `il y a quelques secondes`,
           action: notification.postId ? (
-            <button 
+            <button
               onClick={() => navigate(`/notifications/${notification.id}`)}
               className="underline"
             >
@@ -80,6 +84,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
             </button>
           ) : undefined,
         });
+      });
+
+      // Gestion des utilisateurs en ligne
+      newSocket.on("onlineUsers", (userIds: string[]) => {
+        setOnlineUsers(userIds);
       });
 
       return () => {
@@ -94,8 +103,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
       isConnected,
       unreadNotificationsCount,
       setUnreadNotificationsCount,
+      onlineUsers,
     }),
-    [socket, isConnected, unreadNotificationsCount]
+    [socket, isConnected, unreadNotificationsCount, onlineUsers]
   );
 
   return (
@@ -104,3 +114,4 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
     </SocketContext.Provider>
   );
 };
+
