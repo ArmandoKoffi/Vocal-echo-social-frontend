@@ -22,15 +22,19 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { token } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showAllPosts, setShowAllPosts] = useState(false);
 
   const fetchPosts = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get("https://vocal-echo-social-backend.onrender.com/api/posts", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.get(
+        "https://vocal-echo-social-backend.onrender.com/api/posts",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (response.data.success) {
         setPosts(response.data.data);
@@ -80,16 +84,14 @@ const Index = () => {
       )
     );
   };
-  
+
   const handlePostDeleted = (postId: string) => {
     setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
   };
 
   const handlePostUpdated = (updatedPost: VoicePostProps) => {
     setPosts((prevPosts) =>
-      prevPosts.map((post) =>
-        post.id === updatedPost.id ? updatedPost : post
-      )
+      prevPosts.map((post) => (post.id === updatedPost.id ? updatedPost : post))
     );
   };
 
@@ -133,7 +135,7 @@ const Index = () => {
           </div>
         ) : posts.length > 0 ? (
           <div className="space-y-4">
-            {posts.map((post, index) => (
+            {(showAllPosts ? posts : posts.slice(0, 3)).map((post, index) => (
               <motion.div
                 key={post.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -152,6 +154,15 @@ const Index = () => {
                 />
               </motion.div>
             ))}
+
+            {posts.length > 3 && (
+              <button
+                onClick={() => setShowAllPosts(!showAllPosts)}
+                className="w-full py-2 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors"
+              >
+                {showAllPosts ? "Voir moins" : "Voir plus de publications"}
+              </button>
+            )}
           </div>
         ) : (
           <div className="text-center py-8">
