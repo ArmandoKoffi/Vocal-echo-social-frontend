@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import NavBar from "@/components/NavBar";
 import VoicePost, { VoicePostProps } from "@/components/VoicePost";
 import RecordButton from "@/components/RecordButton";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -95,6 +95,12 @@ const Index = () => {
     );
   };
 
+  const toggleShowAllPosts = () => {
+    setShowAllPosts(!showAllPosts);
+  };
+
+  const displayedPosts = showAllPosts ? posts : posts.slice(0, 3);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       <NavBar />
@@ -135,33 +141,42 @@ const Index = () => {
           </div>
         ) : posts.length > 0 ? (
           <div className="space-y-4">
-            {(showAllPosts ? posts : posts.slice(0, 3)).map((post, index) => (
-              <motion.div
-                key={post.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                exit={{ opacity: 0, y: -20 }}
-              >
-                <VoicePost
-                  {...post}
-                  onLikeUpdate={handleLikeUpdate}
-                  onCommentAdded={(comment) =>
-                    handleCommentAdded(post.id, comment)
-                  }
-                  onPostDeleted={handlePostDeleted}
-                  onPostUpdated={handlePostUpdated}
-                />
-              </motion.div>
-            ))}
+            <AnimatePresence>
+              {displayedPosts.map((post, index) => (
+                <motion.div
+                  key={post.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  layout
+                >
+                  <VoicePost
+                    {...post}
+                    onLikeUpdate={handleLikeUpdate}
+                    onCommentAdded={(comment) =>
+                      handleCommentAdded(post.id, comment)
+                    }
+                    onPostDeleted={handlePostDeleted}
+                    onPostUpdated={handlePostUpdated}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
 
             {posts.length > 3 && (
-              <button
-                onClick={() => setShowAllPosts(!showAllPosts)}
-                className="w-full py-2 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors"
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
               >
-                {showAllPosts ? "Voir moins" : "Voir plus de publications"}
-              </button>
+                <button
+                  onClick={toggleShowAllPosts}
+                  className="w-full py-2 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors"
+                >
+                  {showAllPosts ? "Voir moins" : "Voir plus de publications"}
+                </button>
+              </motion.div>
             )}
           </div>
         ) : (
@@ -182,3 +197,4 @@ const Index = () => {
 };
 
 export default Index;
+
