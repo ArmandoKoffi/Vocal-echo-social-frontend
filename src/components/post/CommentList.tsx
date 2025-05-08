@@ -14,7 +14,6 @@ const CommentList: React.FC<CommentListProps> = ({ comments }) => {
     return null;
   }
 
-  // Format time for display
   const formatDuration = (seconds?: number) => {
     if (!seconds) return null;
     const mins = Math.floor(seconds / 60);
@@ -26,13 +25,19 @@ const CommentList: React.FC<CommentListProps> = ({ comments }) => {
     <div className="space-y-3 mb-3">
       {comments.map((comment) => (
         <div key={comment.id} className="flex gap-2">
-          <Avatar className="h-8 w-8">
+          <Avatar className="h-8 w-8 flex-shrink-0">
+            {" "}
+            {/* Ajout de flex-shrink-0 */}
             <AvatarImage src={comment.avatar} alt={comment.username} />
             <AvatarFallback>{comment.username.charAt(0)}</AvatarFallback>
           </Avatar>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
+            {" "}
+            {/* Ajout de min-w-0 pour le conteneur */}
             <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded-lg">
-              <p className="text-xs font-medium dark:text-white">
+              <p className="text-xs font-medium dark:text-white truncate">
+                {" "}
+                {/* Ajout de truncate */}
                 {comment.username}
               </p>
               {comment.audioUrl ? (
@@ -52,7 +57,9 @@ const CommentList: React.FC<CommentListProps> = ({ comments }) => {
                   )}
                 </div>
               ) : (
-                <p className="text-sm mt-1 dark:text-gray-200">
+                <p className="text-sm mt-1 dark:text-gray-200 break-words">
+                  {" "}
+                  {/* Ajout de break-words */}
                   {comment.content}
                 </p>
               )}

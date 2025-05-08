@@ -262,7 +262,9 @@ const VoicePost: React.FC<VoicePostProps> = ({
               <input
                 type="file"
                 accept="audio/*"
-                onChange={(e) => e.target.files && setNewAudioFile(e.target.files[0])}
+                onChange={(e) =>
+                  e.target.files && setNewAudioFile(e.target.files[0])
+                }
                 title="Upload an audio file"
                 className="block w-full text-sm text-gray-500
                   file:mr-4 file:py-2 file:px-4
@@ -284,7 +286,10 @@ const VoicePost: React.FC<VoicePostProps> = ({
               </Button>
               <Button
                 onClick={handleUpdatePost}
-                disabled={isUpdating || (!newAudioFile && editedDescription === description)}
+                disabled={
+                  isUpdating ||
+                  (!newAudioFile && editedDescription === description)
+                }
               >
                 {isUpdating ? "Enregistrement..." : "Enregistrer"}
               </Button>
@@ -297,7 +302,11 @@ const VoicePost: React.FC<VoicePostProps> = ({
             )}
 
             <div className="mb-3">
-              <AudioPlayer audioUrl={audioUrl} showEqualizer={true} mini={false} />
+              <AudioPlayer
+                audioUrl={audioUrl}
+                showEqualizer={true}
+                mini={false}
+              />
 
               {audioDuration && (
                 <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 flex justify-end">
@@ -323,7 +332,11 @@ const VoicePost: React.FC<VoicePostProps> = ({
 
       {isCommentsOpen && (
         <div className="border-t border-gray-100 dark:border-gray-700 p-4">
-          <CommentList comments={postComments} />
+          <div className="max-h-64 overflow-y-auto pr-2">
+            {" "}
+            {/* Ajout de cette div wrapper */}
+            <CommentList comments={postComments} />
+          </div>
           <CommentForm postId={id} onCommentAdded={handleCommentAdded} />
         </div>
       )}
