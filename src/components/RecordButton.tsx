@@ -21,6 +21,7 @@ interface RecordButtonProps {
 const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [description, setDescription] = useState("");
+  const [isPosting, setIsPosting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -51,6 +52,7 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
 
   const handleAudioReady = async (audioBlob: Blob) => {
     try {
+      setIsPosting(true);
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
 
@@ -93,10 +95,13 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
             description: "Impossible de publier votre note vocale.",
             variant: "destructive",
           });
+        } finally {
+          setIsPosting(false);
         }
       });
     } catch (error) {
       console.error(error);
+      setIsPosting(false);
       toast({
         title: "Erreur",
         description: "Impossible de traiter votre audio.",
@@ -191,6 +196,7 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
             onCancel={handleCloseDialog}
             description={description}
             onDescriptionChange={setDescription}
+            isPosting={isPosting}
           />
         </DialogContent>
       </Dialog>

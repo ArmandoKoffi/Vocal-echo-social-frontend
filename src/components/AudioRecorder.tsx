@@ -1,5 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Mic, Square, Send, X, Pause, Play, RefreshCcw } from "lucide-react";
+import {
+  Mic,
+  Square,
+  Send,
+  X,
+  Pause,
+  Play,
+  RefreshCcw,
+  Loader2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +21,7 @@ interface AudioRecorderProps {
   onCancel: () => void;
   description: string;
   onDescriptionChange: (description: string) => void;
+  isPosting: boolean;
 }
 
 const formatTime = (timeInSeconds: number) => {
@@ -27,6 +37,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
   onCancel,
   description,
   onDescriptionChange,
+  isPosting,
 }) => {
   const [recordingStage, setRecordingStage] = useState<
     "initial" | "recording" | "description" | "preview"
@@ -425,8 +436,16 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
                   <Button
                     onClick={goToPreview}
                     className="w-full bg-voicify-orange hover:bg-voicify-orange/90"
+                    disabled={isPosting}
                   >
-                    Passer à la prévisualisation
+                    {isPosting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Chargement...
+                      </>
+                    ) : (
+                      "Passer à la prévisualisation"
+                    )}
                   </Button>
                 </motion.div>
               )}
@@ -477,6 +496,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
                 variant="outline"
                 onClick={handleReRecord}
                 className="flex-1"
+                disabled={isPosting}
               >
                 <RefreshCcw className="mr-2 h-4 w-4" /> Réenregistrer
               </Button>
@@ -484,8 +504,18 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
               <Button
                 onClick={handleSend}
                 className="flex-1 bg-voicify-orange hover:bg-voicify-orange/90"
+                disabled={isPosting}
               >
-                <Send className="mr-2 h-4 w-4" /> Envoyer
+                {isPosting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Envoi en cours...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" /> Envoyer
+                  </>
+                )}
               </Button>
             </motion.div>
           </motion.div>
@@ -498,4 +528,3 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
 };
 
 export default AudioRecorder;
-
