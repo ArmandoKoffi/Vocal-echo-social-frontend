@@ -11,10 +11,8 @@ import AudioRecorder from "./AudioRecorder";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import axios from "axios"; // 🔥 Ajout
-import { useAuth } from "@/contexts/AuthContext"; // 🔥 Ajout pour récupérer le token
+import axios from "axios";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface RecordButtonProps {
   onPostCreated: () => void;
@@ -26,23 +24,32 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const { token } = useAuth(); // 🔥
+  const { token } = useAuth();
+  const [attemptedOutsideClick, setAttemptedOutsideClick] = useState(false);
 
-  const handleDescriptionValidation = () => {
-    if (!description.trim()) {
-      toast({
-        title: "Description requise",
-        description: "Veuillez ajouter une description à votre note vocale.",
-        variant: "destructive",
-      });
-      return false;
+  const handleOutsideClick = () => {
+    setAttemptedOutsideClick(true);
+
+    toast({
+      title: "Utilisez la croix pour fermer",
+      description: "Veuillez utiliser le bouton X pour fermer cette fenêtre.",
+      variant: "destructive",
+    });
+
+    const dialogElement = document.querySelector(".dialog-shake");
+    if (dialogElement) {
+      dialogElement.classList.add("animate-shake");
+      setTimeout(() => {
+        dialogElement.classList.remove("animate-shake");
+      }, 500);
     }
-    return true;
+
+    setTimeout(() => {
+      setAttemptedOutsideClick(false);
+    }, 1000);
   };
 
   const handleAudioReady = async (audioBlob: Blob) => {
-    if (!handleDescriptionValidation()) return;
-
     try {
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
@@ -53,7 +60,7 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
         const formData = new FormData();
         formData.append("audio", audioBlob);
         formData.append("description", description);
-        formData.append("audioDuration", duration.toFixed(2)); // envoyer avec 2 décimales
+        formData.append("audioDuration", duration.toFixed(2));
 
         try {
           await axios.post(
@@ -98,12 +105,9 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
     }
   };
 
-  const handleDescriptionChange = (
-    e: React.ChangeEvent<HTMLTextAreaElement>
-  ) => {
-    if (e.target.value.length <= 200) {
-      setDescription(e.target.value);
-    }
+  const handleCloseDialog = () => {
+    setIsOpen(false);
+    setDescription("");
   };
 
   return (
@@ -134,40 +138,60 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
         </Button>
       </motion.div>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md">
+      <style>{`
+        @keyframes shake {
+          0% {
+            transform: translateX(0);
+          }
+          20% {
+            transform: translateX(-10px);
+          }
+          40% {
+            transform: translateX(10px);
+          }
+          60% {
+            transform: translateX(-5px);
+          }
+          80% {
+            transform: translateX(5px);
+          }
+          100% {
+            transform: translateX(0);
+          }
+        }
+        .animate-shake {
+          animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        }
+      `}</style>
+
+      <Dialog open={isOpen} onOpenChange={() => {}} modal={true}>
+        <DialogContent
+          className={`sm:max-w-md dialog-shake ${
+            attemptedOutsideClick ? "border-red-500" : ""
+          }`}
+          onInteractOutside={handleOutsideClick}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
-            <DialogTitle>Enregistrer une note vocale</DialogTitle>
+            <DialogTitle className="flex justify-between items-center">
+              <span>Enregistrer une note vocale</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleCloseDialog}
+                className="h-6 w-6 rounded-full"
+              >
+                <span className="text-lg font-bold">×</span>
+              </Button>
+            </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="description" className="mb-2 block">
-                Description{" "}
-                <span className="text-sm text-gray-500">
-                  ({description.length}/200)
-                </span>
-              </Label>
-              <Textarea
-                id="description"
-                placeholder="De quoi parle votre note vocale ?"
-                value={description}
-                onChange={handleDescriptionChange}
-                className="resize-none"
-                rows={3}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Ajoutez une description pour aider les autres utilisateurs à
-                comprendre votre note vocale.
-              </p>
-            </div>
-
-            <AudioRecorder
-              onAudioReady={handleAudioReady}
-              onCancel={() => setIsOpen(false)}
-              description={description}
-            />
-          </div>
+          <AudioRecorder
+            onAudioReady={handleAudioReady}
+            onCancel={handleCloseDialog}
+            description={description}
+            onDescriptionChange={setDescription}
+          />
         </DialogContent>
       </Dialog>
     </>

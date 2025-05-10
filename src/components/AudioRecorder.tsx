@@ -4,16 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import RecordingControls from "./audio/RecordingControls";
+import { Textarea } from "@/components/ui/textarea";
 import RecordingWaveform from "./audio/RecordingWaveform";
 
 interface AudioRecorderProps {
   onAudioReady: (audioBlob: Blob) => void;
   onCancel: () => void;
-  description?: string;
+  description: string;
+  onDescriptionChange: (description: string) => void;
 }
 
-// 🔥 Fonction pour formater le temps en MM:SS
 const formatTime = (timeInSeconds: number) => {
   const minutes = Math.floor(timeInSeconds / 60);
   const seconds = timeInSeconds % 60;
@@ -26,25 +26,30 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
   onAudioReady,
   onCancel,
   description,
+  onDescriptionChange,
 }) => {
+  const [recordingStage, setRecordingStage] = useState<
+    "initial" | "recording" | "description" | "preview"
+  >("initial");
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioWaveform, setAudioWaveform] = useState<number[]>([]);
-  const [showPreview, setShowPreview] = useState(false);
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
+
   const { toast } = useToast();
 
   const MAX_RECORDING_TIME = 60;
   const WAVEFORM_SAMPLES = 40;
-
-  const samplesCount = audioWaveform.length;
 
   useEffect(() => {
     return () => {
@@ -59,6 +64,9 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
       ) {
         audioContextRef.current.close();
       }
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+      }
     };
   }, [isRecording]);
 
@@ -67,8 +75,9 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
       if (audioBlob) {
         setAudioBlob(null);
         audioChunksRef.current = [];
-        setShowPreview(false);
       }
+
+      setRecordingStage("recording");
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
@@ -87,10 +96,10 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
           type: "audio/webm",
         });
         setAudioBlob(audioBlob);
-        setShowPreview(true);
         stream.getTracks().forEach((track) => track.stop());
         if (animationFrameRef.current)
           cancelAnimationFrame(animationFrameRef.current);
+        setRecordingStage("description");
       });
 
       if (timerRef.current) clearInterval(timerRef.current);
@@ -111,7 +120,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
 
       startWaveformVisualization();
     } catch (error) {
-      console.error("Erreur d'accès au micro:", error);
+      console.error("Microphone access error:", error);
       toast({
         title: "Erreur d'accès au microphone",
         description: "Veuillez vérifier vos permissions.",
@@ -177,6 +186,10 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
     ) {
       mediaRecorderRef.current.pause();
       setIsPaused(true);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     }
   };
 
@@ -209,113 +222,278 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
     setAudioBlob(null);
     setRecordingTime(0);
     setAudioWaveform([]);
-    setShowPreview(false);
+    setRecordingStage("initial");
     onCancel();
   };
 
   const handleSend = () => {
     if (audioBlob) {
       onAudioReady(audioBlob);
-      setAudioBlob(null);
-      setRecordingTime(0);
-      setAudioWaveform([]);
-      setShowPreview(false);
-      setIsRecording(false);
     }
   };
 
-  const handleReRecord = async () => {
-    await handleCancel();
+  const goToPreview = () => {
+    if (audioBlob && description.trim()) {
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+      }
+
+      const url = URL.createObjectURL(audioBlob);
+      audioUrlRef.current = url;
+
+      if (audioRef.current) {
+        audioRef.current.src = url;
+        audioRef.current.load();
+      }
+
+      setRecordingStage("preview");
+    }
+  };
+
+  const handleReRecord = () => {
     setAudioBlob(null);
     setRecordingTime(0);
     setAudioWaveform([]);
-    startRecording();
+    setRecordingStage("initial");
+
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
+    }
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto p-4 rounded-xl bg-white shadow-lg space-y-4">
-      {description && <p className="text-gray-600">{description}</p>}
-
-      {showPreview && audioBlob ? (
-        <motion.div
-          key="preview"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0 }}
-        >
-          {/* 🎧 Mini lecteur audio */}
-          <audio controls className="w-full mt-4 rounded-lg">
-            <source src={URL.createObjectURL(audioBlob)} type="audio/webm" />
-            Votre navigateur ne supporte pas la lecture audio.
-          </audio>
-
-          <div className="flex justify-between mt-4 gap-3">
-            <Button variant="outline" onClick={handleReRecord}>
-              <RefreshCcw className="mr-2 h-4 w-4" /> Réenregistrer
-            </Button>
-            <div className="flex gap-2">
-              <Button variant="secondary" onClick={handleCancel}>
-                <X className="mr-2 h-4 w-4" /> Annuler
-              </Button>
-              <Button onClick={handleSend}>
-                <Send className="mr-2 h-4 w-4" /> Envoyer
-              </Button>
-            </div>
-          </div>
-        </motion.div>
-      ) : (
-        <AnimatePresence mode="wait">
+    <motion.div
+      className="w-full max-w-xl mx-auto rounded-xl bg-white shadow-lg space-y-4"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <AnimatePresence mode="wait">
+        {recordingStage === "initial" && (
           <motion.div
-            key="recorder"
+            key="initial"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            className="flex justify-center py-12"
           >
+            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+              <Button
+                onClick={startRecording}
+                className="rounded-full bg-voicify-orange hover:bg-voicify-orange/90 text-white h-20 w-20 flex items-center justify-center shadow-lg"
+              >
+                <motion.div
+                  animate={{
+                    scale: [1, 1.2, 1],
+                  }}
+                  transition={{
+                    repeat: Infinity,
+                    repeatType: "loop",
+                    duration: 2,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <Mic size={32} />
+                </motion.div>
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {recordingStage === "recording" && (
+          <motion.div
+            key="recording"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="p-4 space-y-4"
+          >
+            <motion.div
+              className="flex justify-center items-center"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+            >
+              <div className="text-4xl font-bold text-voicify-orange">
+                {formatTime(recordingTime)}
+              </div>
+            </motion.div>
+
+            <div className="space-y-1">
+              <Progress
+                value={(recordingTime / MAX_RECORDING_TIME) * 100}
+                className="h-2"
+              />
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>00:00</span>
+                <span>01:00</span>
+              </div>
+            </div>
+
             <RecordingWaveform
               waveformData={audioWaveform}
-              isRecording={isRecording}
-              audioBlob={audioBlob}
-              samplesCount={samplesCount}
+              isRecording={isRecording && !isPaused}
+              audioBlob={null}
+              samplesCount={audioWaveform.length}
             />
 
-            {/* 🎯 Timer en direct */}
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-600">
-                Durée : {formatTime(recordingTime)}
-              </span>
-              <span className="text-sm text-gray-500">
-                {formatTime(MAX_RECORDING_TIME)}
-              </span>
+            <div className="flex justify-center gap-4 pt-4">
+              {isPaused ? (
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <Button
+                    onClick={resumeRecording}
+                    className="rounded-full bg-green-600 hover:bg-green-700 h-12 w-12 flex items-center justify-center"
+                  >
+                    <Play size={20} />
+                  </Button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <Button
+                    onClick={pauseRecording}
+                    className="rounded-full bg-amber-500 hover:bg-amber-600 h-12 w-12 flex items-center justify-center"
+                  >
+                    <Pause size={20} />
+                  </Button>
+                </motion.div>
+              )}
+
+              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <Button
+                  onClick={stopRecording}
+                  variant="destructive"
+                  className="rounded-full h-14 w-14 flex items-center justify-center shadow-md"
+                >
+                  <Square size={24} />
+                </Button>
+              </motion.div>
             </div>
-
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-600">
-                Durée : {formatTime(recordingTime)}
-              </span>
-              <span className="text-sm text-gray-500">
-                {formatTime(MAX_RECORDING_TIME)}
-              </span>
-            </div>
-            <Progress
-              value={(recordingTime / MAX_RECORDING_TIME) * 100}
-              className="my-3"
-            />
-
-            <RecordingControls
-              isRecording={isRecording}
-              isPaused={isPaused}
-              onStart={startRecording}
-              onStop={stopRecording}
-              onPause={pauseRecording}
-              onResume={resumeRecording}
-              onCancel={handleCancel}
-              recordingTime={recordingTime}
-              audioBlob={audioBlob}
-            />
           </motion.div>
-        </AnimatePresence>
-      )}
-    </div>
+        )}
+
+        {recordingStage === "description" && (
+          <motion.div
+            key="description"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="p-4 space-y-4"
+          >
+            <div className="space-y-2">
+              <motion.h3
+                className="text-lg font-medium text-center"
+                initial={{ y: -10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+              >
+                Ajouter une description
+              </motion.h3>
+
+              <motion.div
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Textarea
+                  placeholder="De quoi parle votre note vocale ? (200 caractères max)"
+                  value={description}
+                  onChange={(e) => onDescriptionChange(e.target.value)}
+                  className="resize-none h-32 focus:ring-voicify-orange focus:border-voicify-orange"
+                  maxLength={200}
+                  autoFocus
+                />
+                <div className="text-right text-xs text-gray-500 mt-1">
+                  {description.length}/200
+                </div>
+              </motion.div>
+            </div>
+
+            <AnimatePresence>
+              {description.trim().length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="pt-2"
+                >
+                  <Button
+                    onClick={goToPreview}
+                    className="w-full bg-voicify-orange hover:bg-voicify-orange/90"
+                  >
+                    Passer à la prévisualisation
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
+
+        {recordingStage === "preview" && audioBlob && (
+          <motion.div
+            key="preview"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="p-4 space-y-4"
+          >
+            <motion.div
+              className="border rounded-lg p-3 bg-gray-50"
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+            >
+              <h3 className="font-medium mb-2">Description</h3>
+              <p className="text-gray-700">{description}</p>
+            </motion.div>
+
+            <motion.div
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <audio
+                ref={audioRef}
+                controls
+                className="w-full rounded-lg"
+                src={audioUrlRef.current || undefined}
+              >
+                Votre navigateur ne supporte pas la lecture audio.
+              </audio>
+            </motion.div>
+
+            <motion.div
+              className="flex justify-between pt-2 gap-4"
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Button
+                variant="outline"
+                onClick={handleReRecord}
+                className="flex-1"
+              >
+                <RefreshCcw className="mr-2 h-4 w-4" /> Réenregistrer
+              </Button>
+
+              <Button
+                onClick={handleSend}
+                className="flex-1 bg-voicify-orange hover:bg-voicify-orange/90"
+              >
+                <Send className="mr-2 h-4 w-4" /> Envoyer
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {audioBlob && <audio ref={audioRef} className="hidden" />}
+    </motion.div>
   );
 };
 
