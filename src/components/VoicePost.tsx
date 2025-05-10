@@ -9,10 +9,16 @@ import CommentList from "./post/CommentList";
 import ShareDialog from "./post/ShareDialog";
 import DeleteDialog from "./post/DeleteDialog";
 import ReportDialog from "./post/ReportDialog";
-import { likePost, commentOnPost, deletePost, updatePost } from "@/api/postsApi";
+import {
+  likePost,
+  commentOnPost,
+  deletePost,
+  updatePost,
+} from "@/api/postsApi";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import CommentsModal from "./CommentsModal";
 
 export interface Comment {
   id: string;
@@ -74,9 +80,10 @@ const VoicePost: React.FC<VoicePostProps> = ({
   const [isLiking, setIsLiking] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedDescription, setEditedDescription] = useState(description || '');
+  const [editedDescription, setEditedDescription] = useState(description || "");
   const [newAudioFile, setNewAudioFile] = useState<File | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
   const { toast } = useToast();
 
   const handleLike = async () => {
@@ -117,21 +124,17 @@ const VoicePost: React.FC<VoicePostProps> = ({
     try {
       const formData = new FormData();
 
-      // Ajout de la description si modifiée
       if (editedDescription !== description) {
         formData.append("description", editedDescription);
       }
 
-      // Ajout du nouvel audio si fourni
       if (newAudioFile) {
         formData.append("audio", newAudioFile);
         formData.append("audioDuration", String(audioDuration || 0));
       }
 
-      console.log("Envoi de la requête de modification...");
       const updatedPost = await updatePost(id, formData);
 
-      console.log("Post mis à jour avec succès:", updatedPost);
       if (onPostUpdated) {
         onPostUpdated(updatedPost);
       }
@@ -144,7 +147,6 @@ const VoicePost: React.FC<VoicePostProps> = ({
       setIsEditing(false);
       setNewAudioFile(null);
     } catch (error) {
-      console.error("Erreur lors de la mise à jour:", error);
       toast({
         title: "Erreur",
         description: error.message || "Échec de la mise à jour du post",
@@ -168,7 +170,9 @@ const VoicePost: React.FC<VoicePostProps> = ({
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(`https://vocal-echo-social-frontend.vercel.app/post/${id}`);
+    navigator.clipboard.writeText(
+      `https://vocal-echo-social-frontend.vercel.app/post/${id}`
+    );
     toast({
       title: "Lien copié",
       description: "Le lien a été copié dans votre presse-papiers.",
@@ -178,20 +182,20 @@ const VoicePost: React.FC<VoicePostProps> = ({
 
   const handleDelete = async () => {
     if (isDeleting) return;
-    
+
     setIsDeleting(true);
     try {
       await deletePost(id);
-      
+
       toast({
         title: "Publication supprimée",
         description: "Votre publication a été supprimée avec succès.",
       });
-      
+
       if (onPostDeleted) {
         onPostDeleted(id);
       }
-      
+
       setIsDeleteDialogOpen(false);
     } catch (error) {
       toast({
@@ -332,14 +336,27 @@ const VoicePost: React.FC<VoicePostProps> = ({
 
       {isCommentsOpen && (
         <div className="border-t border-gray-100 dark:border-gray-700 p-4">
-          <div className="max-h-64 overflow-y-auto pr-2">
-            {" "}
-            {/* Ajout de cette div wrapper */}
-            <CommentList comments={postComments} />
-          </div>
+          <CommentList comments={postComments.slice(0, 2)} />
+
+          {postComments.length > 2 && (
+            <Button
+              variant="ghost"
+              className="w-full mt-2 text-sm text-voicify-blue"
+              onClick={() => setIsCommentsModalOpen(true)}
+            >
+              Afficher tous les commentaires ({postComments.length})
+            </Button>
+          )}
+
           <CommentForm postId={id} onCommentAdded={handleCommentAdded} />
         </div>
       )}
+
+      <CommentsModal
+        isOpen={isCommentsModalOpen}
+        onOpenChange={setIsCommentsModalOpen}
+        comments={postComments}
+      />
 
       <ShareDialog
         isOpen={isShareDialogOpen}
