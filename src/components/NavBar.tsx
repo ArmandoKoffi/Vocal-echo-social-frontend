@@ -27,6 +27,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSocket } from "@/contexts/SocketContext";
 
 const NavBar = () => {
   const location = useLocation();
@@ -34,6 +35,7 @@ const NavBar = () => {
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+  const { unreadNotificationsCount } = useSocket();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
@@ -133,6 +135,13 @@ const NavBar = () => {
                   }`}
                 >
                   <Bell size={20} />
+                  {unreadNotificationsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs px-1.5 min-w-5 h-5 flex items-center justify-center">
+                      {unreadNotificationsCount > 9
+                        ? "9+"
+                        : unreadNotificationsCount}
+                    </span>
+                  )}
                 </Button>
               </Link>
             </motion.div>
@@ -280,10 +289,17 @@ const NavBar = () => {
                       isActive("/notifications")
                         ? "text-voicify-orange font-semibold bg-orange-50 dark:bg-orange-900/20"
                         : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    } transition-colors`}
+                    } transition-colors relative`}
                   >
                     <Bell size={18} />
                     <span>Notifications</span>
+                    {unreadNotificationsCount > 0 && (
+                      <span className="ml-2 bg-red-500 text-white rounded-full text-xs px-1.5 min-w-5 h-5 flex items-center justify-center">
+                        {unreadNotificationsCount > 9
+                          ? "9+"
+                          : unreadNotificationsCount}
+                      </span>
+                    )}
                   </Link>
                   <Link
                     to="/profile"
