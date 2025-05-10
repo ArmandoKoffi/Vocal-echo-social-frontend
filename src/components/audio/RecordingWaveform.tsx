@@ -53,12 +53,12 @@ const RecordingWaveform: React.FC<RecordingWaveformProps> = ({
   }, [isRecording, isPaused, analyser]);
 
   return (
-    <div className="h-20 bg-gray-100 rounded-lg p-2 flex items-center justify-center">
-      <div className="flex h-full items-center gap-1">
+    <div className="h-20 bg-gray-100 dark:bg-gray-700 rounded-lg p-2 flex items-center justify-center overflow-hidden">
+      <div className="flex h-full items-center gap-1 w-full">
         {waveform.map((height, i) => (
           <motion.div
             key={i}
-            className="w-1.5 bg-voicify-blue rounded-full"
+            className="w-1.5 bg-voicify-blue rounded-full flex-shrink-0"
             animate={{
               height: `${height}%`,
               backgroundColor:
@@ -80,4 +80,3 @@ const RecordingWaveform: React.FC<RecordingWaveformProps> = ({
 };
 
 export default RecordingWaveform;
-

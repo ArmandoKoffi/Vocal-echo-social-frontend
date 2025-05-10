@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from "@/components/ui/dialog";
 import AudioRecorder from "./AudioRecorder";
 import { useToast } from "@/hooks/use-toast";
@@ -58,8 +59,7 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
             description: "Votre note vocale a été publiée avec succès.",
           });
 
-          setIsOpen(false);
-          setDescription("");
+          handleCloseDialog();
           onPostCreated();
 
           if (location.pathname !== "/") {
@@ -120,10 +120,37 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
         </Button>
       </motion.div>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            toast({
+              title: "Fermeture de l'enregistrement",
+              description:
+                "Veuillez utiliser la croix en haut à droite pour fermer la fenêtre.",
+            });
+          } else {
+            setIsOpen(open);
+          }
+        }}
+      >
+        <DialogContent
+          className="sm:max-w-md max-h-[90vh] overflow-y-auto"
+          onInteractOutside={(e) => {
+            e.preventDefault();
+            toast({
+              title: "Fermeture de l'enregistrement",
+              description:
+                "Veuillez utiliser la croix en haut à droite pour fermer la fenêtre.",
+            });
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Enregistrer une note vocale</DialogTitle>
+            <DialogClose
+              onClick={handleCloseDialog}
+              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+            />
           </DialogHeader>
 
           <AudioRecorder

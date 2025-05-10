@@ -74,7 +74,7 @@ const RecordingPreview: React.FC<RecordingPreviewProps> = ({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="text-center text-sm font-medium dark:text-white mb-1">
+      <div className="text-center text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
         Prévisualisation de votre enregistrement
       </div>
 
@@ -94,6 +94,15 @@ const RecordingPreview: React.FC<RecordingPreviewProps> = ({
             Temps restant: {formatTime(remainingTime)}
           </div>
         )}
+      </div>
+
+      <div className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-700">
+        <h3 className="font-medium mb-2 text-gray-900 dark:text-gray-100">
+          Description
+        </h3>
+        <p className="text-gray-700 dark:text-gray-300">
+          Votre description apparaîtra ici
+        </p>
       </div>
 
       <div className="flex justify-center gap-4 mt-2">
