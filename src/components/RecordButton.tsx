@@ -56,12 +56,16 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
         formData.append("audioDuration", duration.toFixed(2)); // envoyer avec 2 décimales
 
         try {
-          await axios.post("https://vocal-echo-social-backend.onrender.com/api/posts", formData, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data",
-            },
-          });
+          await axios.post(
+            "https://vocal-echo-social-backend.onrender.com/api/posts",
+            formData,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          );
 
           toast({
             title: "Note vocale publiée",
@@ -93,7 +97,6 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
       });
     }
   };
-
 
   const handleDescriptionChange = (
     e: React.ChangeEvent<HTMLTextAreaElement>
@@ -172,3 +175,4 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
 };
 
 export default RecordButton;
+
