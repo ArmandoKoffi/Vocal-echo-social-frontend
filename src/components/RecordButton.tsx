@@ -26,29 +26,6 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { token } = useAuth();
-  const [attemptedOutsideClick, setAttemptedOutsideClick] = useState(false);
-
-  const handleOutsideClick = () => {
-    setAttemptedOutsideClick(true);
-
-    toast({
-      title: "Utilisez la croix pour fermer",
-      description: "Veuillez utiliser le bouton X pour fermer cette fenêtre.",
-      variant: "destructive",
-    });
-
-    const dialogElement = document.querySelector(".dialog-shake");
-    if (dialogElement) {
-      dialogElement.classList.add("animate-shake");
-      setTimeout(() => {
-        dialogElement.classList.remove("animate-shake");
-      }, 500);
-    }
-
-    setTimeout(() => {
-      setAttemptedOutsideClick(false);
-    }, 1000);
-  };
 
   const handleAudioReady = async (audioBlob: Blob) => {
     try {
@@ -143,52 +120,10 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
         </Button>
       </motion.div>
 
-      <style>{`
-        @keyframes shake {
-          0% {
-            transform: translateX(0);
-          }
-          20% {
-            transform: translateX(-10px);
-          }
-          40% {
-            transform: translateX(10px);
-          }
-          60% {
-            transform: translateX(-5px);
-          }
-          80% {
-            transform: translateX(5px);
-          }
-          100% {
-            transform: translateX(0);
-          }
-        }
-        .animate-shake {
-          animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-        }
-      `}</style>
-
-      <Dialog open={isOpen} onOpenChange={() => {}} modal={true}>
-        <DialogContent
-          className={`sm:max-w-md dialog-shake ${
-            attemptedOutsideClick ? "border-red-500" : ""
-          }`}
-          onInteractOutside={handleOutsideClick}
-          onEscapeKeyDown={(e) => e.preventDefault()}
-        >
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex justify-between items-center">
-              <span>Enregistrer une note vocale</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleCloseDialog}
-                className="h-6 w-6 rounded-full"
-              >
-                <span className="text-lg font-bold">×</span>
-              </Button>
-            </DialogTitle>
+            <DialogTitle>Enregistrer une note vocale</DialogTitle>
           </DialogHeader>
 
           <AudioRecorder

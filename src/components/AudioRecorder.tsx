@@ -10,7 +10,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,27 +45,22 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
   const [isPaused, setIsPaused] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [audioWaveform, setAudioWaveform] = useState<number[]>([]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
 
   const { toast } = useToast();
 
   const MAX_RECORDING_TIME = 60;
-  const WAVEFORM_SAMPLES = 40;
 
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      if (animationFrameRef.current)
-        cancelAnimationFrame(animationFrameRef.current);
       if (mediaRecorderRef.current && isRecording)
         mediaRecorderRef.current.stop();
       if (
@@ -89,6 +83,9 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
       }
 
       setRecordingStage("recording");
+      setIsRecording(true);
+      setIsPaused(false);
+      setRecordingTime(0);
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
@@ -108,28 +105,22 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         });
         setAudioBlob(audioBlob);
         stream.getTracks().forEach((track) => track.stop());
-        if (animationFrameRef.current)
-          cancelAnimationFrame(animationFrameRef.current);
         setRecordingStage("description");
       });
 
       if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
         setRecordingTime((prevTime) => {
-          if (prevTime >= MAX_RECORDING_TIME) {
+          const newTime = prevTime + 1;
+          if (newTime >= MAX_RECORDING_TIME) {
             stopRecording();
             return MAX_RECORDING_TIME;
           }
-          return prevTime + 1;
+          return newTime;
         });
       }, 1000);
 
-      setRecordingTime(0);
-      setIsPaused(false);
       mediaRecorderRef.current.start();
-      setIsRecording(true);
-
-      startWaveformVisualization();
     } catch (error) {
       console.error("Microphone access error:", error);
       toast({
@@ -138,40 +129,6 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         variant: "destructive",
       });
     }
-  };
-
-  const startWaveformVisualization = () => {
-    if (!analyserRef.current) return;
-
-    const bufferLength = analyserRef.current.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-
-    const updateWaveform = () => {
-      if (!analyserRef.current || !isRecording || isPaused) {
-        if (animationFrameRef.current)
-          cancelAnimationFrame(animationFrameRef.current);
-        return;
-      }
-
-      analyserRef.current.getByteFrequencyData(dataArray);
-      const step = Math.floor(bufferLength / WAVEFORM_SAMPLES);
-      const waveformData: number[] = [];
-
-      for (let i = 0; i < WAVEFORM_SAMPLES; i++) {
-        let sum = 0;
-        for (let j = 0; j < step; j++) {
-          const index = i * step + j;
-          if (index < bufferLength) sum += dataArray[index];
-        }
-        const value = 10 + (sum / step) * 0.9;
-        waveformData.push(value);
-      }
-
-      setAudioWaveform(waveformData);
-      animationFrameRef.current = requestAnimationFrame(updateWaveform);
-    };
-
-    updateWaveform();
   };
 
   const stopRecording = () => {
@@ -183,56 +140,31 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-      if (animationFrameRef.current)
-        cancelAnimationFrame(animationFrameRef.current);
     }
   };
 
-  const pauseRecording = () => {
-    if (
-      mediaRecorderRef.current &&
-      isRecording &&
-      !isPaused &&
-      "pause" in mediaRecorderRef.current
-    ) {
+  const togglePause = () => {
+    if (!mediaRecorderRef.current) return;
+
+    if (isPaused) {
+      mediaRecorderRef.current.resume();
+      timerRef.current = setInterval(() => {
+        setRecordingTime((prevTime) => prevTime + 1);
+      }, 1000);
+    } else {
       mediaRecorderRef.current.pause();
-      setIsPaused(true);
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
     }
-  };
-
-  const resumeRecording = () => {
-    if (
-      mediaRecorderRef.current &&
-      isRecording &&
-      isPaused &&
-      "resume" in mediaRecorderRef.current
-    ) {
-      mediaRecorderRef.current.resume();
-      setIsPaused(false);
-
-      timerRef.current = setInterval(() => {
-        setRecordingTime((prevTime) => {
-          if (prevTime >= MAX_RECORDING_TIME) {
-            stopRecording();
-            return MAX_RECORDING_TIME;
-          }
-          return prevTime + 1;
-        });
-      }, 1000);
-
-      startWaveformVisualization();
-    }
+    setIsPaused(!isPaused);
   };
 
   const handleCancel = () => {
     stopRecording();
     setAudioBlob(null);
     setRecordingTime(0);
-    setAudioWaveform([]);
     setRecordingStage("initial");
     onCancel();
   };
@@ -264,8 +196,8 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
   const handleReRecord = () => {
     setAudioBlob(null);
     setRecordingTime(0);
-    setAudioWaveform([]);
     setRecordingStage("initial");
+    onDescriptionChange("");
 
     if (audioUrlRef.current) {
       URL.revokeObjectURL(audioUrlRef.current);
@@ -294,19 +226,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
                 onClick={startRecording}
                 className="rounded-full bg-voicify-orange hover:bg-voicify-orange/90 text-white h-20 w-20 flex items-center justify-center shadow-lg"
               >
-                <motion.div
-                  animate={{
-                    scale: [1, 1.2, 1],
-                  }}
-                  transition={{
-                    repeat: Infinity,
-                    repeatType: "loop",
-                    duration: 2,
-                    ease: "easeInOut",
-                  }}
-                >
-                  <Mic size={32} />
-                </motion.div>
+                <Mic size={32} />
               </Button>
             </motion.div>
           </motion.div>
@@ -320,60 +240,30 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
             exit={{ opacity: 0 }}
             className="p-4 space-y-4"
           >
-            <motion.div
-              className="flex justify-center items-center"
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-            >
-              <div className="text-4xl font-bold text-voicify-orange">
-                {formatTime(recordingTime)}
-              </div>
-            </motion.div>
-
-            <div className="space-y-1">
-              <Progress
-                value={(recordingTime / MAX_RECORDING_TIME) * 100}
-                className="h-2"
-              />
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>00:00</span>
-                <span>01:00</span>
-              </div>
+            <div className="text-center text-2xl font-mono text-voicify-orange">
+              {formatTime(recordingTime)}
             </div>
 
             <RecordingWaveform
-              waveformData={audioWaveform}
-              isRecording={isRecording && !isPaused}
-              audioBlob={null}
-              samplesCount={audioWaveform.length}
+              isRecording={isRecording}
+              isPaused={isPaused}
+              audioContext={audioContextRef.current}
+              analyser={analyserRef.current}
             />
 
             <div className="flex justify-center gap-4 pt-4">
-              {isPaused ? (
-                <motion.div
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <Button
+                  onClick={togglePause}
+                  className={`rounded-full ${
+                    isPaused
+                      ? "bg-green-600 hover:bg-green-700"
+                      : "bg-amber-500 hover:bg-amber-600"
+                  } h-12 w-12 flex items-center justify-center`}
                 >
-                  <Button
-                    onClick={resumeRecording}
-                    className="rounded-full bg-green-600 hover:bg-green-700 h-12 w-12 flex items-center justify-center"
-                  >
-                    <Play size={20} />
-                  </Button>
-                </motion.div>
-              ) : (
-                <motion.div
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <Button
-                    onClick={pauseRecording}
-                    className="rounded-full bg-amber-500 hover:bg-amber-600 h-12 w-12 flex items-center justify-center"
-                  >
-                    <Pause size={20} />
-                  </Button>
-                </motion.div>
-              )}
+                  {isPaused ? <Play size={20} /> : <Pause size={20} />}
+                </Button>
+              </motion.div>
 
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                 <Button
