@@ -1,14 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import {
-  Mic,
-  Square,
-  Send,
-  X,
-  Pause,
-  Play,
-  RefreshCcw,
-  Loader2,
-} from "lucide-react";
+import { Mic, Square, Send, X, Pause, Play, RefreshCcw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,9 +17,7 @@ interface AudioRecorderProps {
 const formatTime = (timeInSeconds: number) => {
   const minutes = Math.floor(timeInSeconds / 60);
   const seconds = timeInSeconds % 60;
-  return `${minutes.toString().padStart(2, "0")}:${seconds
-    .toString()
-    .padStart(2, "0")}`;
+  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 };
 
 const AudioRecorder: React.FC<AudioRecorderProps> = ({
@@ -38,14 +27,12 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
   onDescriptionChange,
   isPosting,
 }) => {
-  const [recordingStage, setRecordingStage] = useState<
-    "initial" | "recording" | "description" | "preview"
-  >("initial");
+  const [recordingStage, setRecordingStage] = useState<"initial" | "recording" | "description" | "preview">("initial");
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-
+  
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -53,7 +40,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
-
+  
   const { toast } = useToast();
 
   const MAX_RECORDING_TIME = 60;
@@ -61,12 +48,8 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      if (mediaRecorderRef.current && isRecording)
-        mediaRecorderRef.current.stop();
-      if (
-        audioContextRef.current &&
-        audioContextRef.current.state !== "closed"
-      ) {
+      if (mediaRecorderRef.current && isRecording) mediaRecorderRef.current.stop();
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
         audioContextRef.current.close();
       }
       if (audioUrlRef.current) {
@@ -100,9 +83,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
       });
 
       mediaRecorderRef.current.addEventListener("stop", () => {
-        const audioBlob = new Blob(audioChunksRef.current, {
-          type: "audio/webm",
-        });
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         setAudioBlob(audioBlob);
         stream.getTracks().forEach((track) => track.stop());
         setRecordingStage("description");
@@ -145,7 +126,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
 
   const togglePause = () => {
     if (!mediaRecorderRef.current) return;
-
+    
     if (isPaused) {
       mediaRecorderRef.current.resume();
       timerRef.current = setInterval(() => {
@@ -180,15 +161,15 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
       if (audioUrlRef.current) {
         URL.revokeObjectURL(audioUrlRef.current);
       }
-
+      
       const url = URL.createObjectURL(audioBlob);
       audioUrlRef.current = url;
-
+      
       if (audioRef.current) {
         audioRef.current.src = url;
         audioRef.current.load();
       }
-
+      
       setRecordingStage("preview");
     }
   };
@@ -198,7 +179,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
     setRecordingTime(0);
     setRecordingStage("initial");
     onDescriptionChange("");
-
+    
     if (audioUrlRef.current) {
       URL.revokeObjectURL(audioUrlRef.current);
       audioUrlRef.current = null;
@@ -206,7 +187,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
   };
 
   return (
-    <motion.div
+    <motion.div 
       className="w-full max-w-xl mx-auto rounded-xl bg-white shadow-lg space-y-4"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -244,7 +225,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
               {formatTime(recordingTime)}
             </div>
 
-            <RecordingWaveform
+            <RecordingWaveform 
               isRecording={isRecording}
               isPaused={isPaused}
               audioContext={audioContextRef.current}
@@ -255,11 +236,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                 <Button
                   onClick={togglePause}
-                  className={`rounded-full ${
-                    isPaused
-                      ? "bg-green-600 hover:bg-green-700"
-                      : "bg-amber-500 hover:bg-amber-600"
-                  } h-12 w-12 flex items-center justify-center`}
+                  className={`rounded-full ${isPaused ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-500 hover:bg-amber-600'} h-12 w-12 flex items-center justify-center`}
                 >
                   {isPaused ? <Play size={20} /> : <Pause size={20} />}
                 </Button>
@@ -287,7 +264,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
             className="p-4 space-y-4"
           >
             <div className="space-y-2">
-              <motion.h3
+              <motion.h3 
                 className="text-lg font-medium text-center"
                 initial={{ y: -10, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
@@ -295,7 +272,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
               >
                 Ajouter une description
               </motion.h3>
-
+              
               <motion.div
                 initial={{ y: 10, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
@@ -323,7 +300,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
                   exit={{ opacity: 0, y: 10 }}
                   className="pt-2"
                 >
-                  <Button
+                  <Button 
                     onClick={goToPreview}
                     className="w-full bg-voicify-orange hover:bg-voicify-orange/90"
                     disabled={isPosting}
@@ -351,7 +328,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
             exit={{ opacity: 0 }}
             className="p-4 space-y-4"
           >
-            <motion.div
+            <motion.div 
               className="border rounded-lg p-3 bg-gray-50"
               initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -366,9 +343,9 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              <audio
+              <audio 
                 ref={audioRef}
-                controls
+                controls 
                 className="w-full rounded-lg"
                 src={audioUrlRef.current || undefined}
               >
@@ -376,22 +353,22 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
               </audio>
             </motion.div>
 
-            <motion.div
+            <motion.div 
               className="flex justify-between pt-2 gap-4"
               initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              <Button
-                variant="outline"
+              <Button 
+                variant="outline" 
                 onClick={handleReRecord}
                 className="flex-1"
                 disabled={isPosting}
               >
                 <RefreshCcw className="mr-2 h-4 w-4" /> Réenregistrer
               </Button>
-
-              <Button
+              
+              <Button 
                 onClick={handleSend}
                 className="flex-1 bg-voicify-orange hover:bg-voicify-orange/90"
                 disabled={isPosting}
@@ -411,7 +388,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
-
+      
       {audioBlob && <audio ref={audioRef} className="hidden" />}
     </motion.div>
   );

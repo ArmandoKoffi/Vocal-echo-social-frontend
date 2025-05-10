@@ -140,4 +140,3 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
 };
 
 export default RecordButton;
-

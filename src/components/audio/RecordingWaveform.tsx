@@ -12,7 +12,7 @@ const RecordingWaveform: React.FC<RecordingWaveformProps> = ({
   isRecording,
   isPaused,
   audioContext,
-  analyser
+  analyser,
 }) => {
   const [waveform, setWaveform] = useState<number[]>(Array(40).fill(10));
   const animationRef = React.useRef<number>();
@@ -59,16 +59,17 @@ const RecordingWaveform: React.FC<RecordingWaveformProps> = ({
           <motion.div
             key={i}
             className="w-1.5 bg-voicify-blue rounded-full"
-            animate={{ 
+            animate={{
               height: `${height}%`,
-              backgroundColor: isRecording && !isPaused 
-                ? ["#3b82f6", "#1d4ed8", "#3b82f6"] 
-                : "#3b82f6"
+              backgroundColor:
+                isRecording && !isPaused
+                  ? ["#3b82f6", "#1d4ed8", "#3b82f6"]
+                  : "#3b82f6",
             }}
-            transition={{ 
+            transition={{
               duration: 0.5,
               repeat: isRecording && !isPaused ? Infinity : 0,
-              repeatType: "reverse"
+              repeatType: "reverse",
             }}
             style={{ height: `${height}%` }}
           />
