@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Mic } from "lucide-react";
+import { Mic, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -129,13 +129,13 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
               description:
                 "Veuillez utiliser la croix en haut à droite pour fermer la fenêtre.",
             });
-          } else {
-            setIsOpen(open);
+            return;
           }
+          setIsOpen(open);
         }}
       >
         <DialogContent
-          className="sm:max-w-md max-h-[90vh] overflow-y-auto"
+          className="w-full max-w-2xl p-0"
           onInteractOutside={(e) => {
             e.preventDefault();
             toast({
@@ -145,21 +145,26 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
             });
           }}
         >
-          <DialogHeader>
+          <DialogHeader className="px-6 pt-6 pb-2">
             <DialogTitle>Enregistrer une note vocale</DialogTitle>
             <DialogClose
               onClick={handleCloseDialog}
-              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
-            />
+              className="absolute right-6 top-6 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </DialogClose>
           </DialogHeader>
 
-          <AudioRecorder
-            onAudioReady={handleAudioReady}
-            onCancel={handleCloseDialog}
-            description={description}
-            onDescriptionChange={setDescription}
-            isPosting={isPosting}
-          />
+          <div className="px-6 pb-6">
+            <AudioRecorder
+              onAudioReady={handleAudioReady}
+              onCancel={handleCloseDialog}
+              description={description}
+              onDescriptionChange={setDescription}
+              isPosting={isPosting}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </>
@@ -167,4 +172,3 @@ const RecordButton: React.FC<RecordButtonProps> = ({ onPostCreated }) => {
 };
 
 export default RecordButton;
-
