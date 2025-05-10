@@ -80,3 +80,4 @@ const RecordingWaveform: React.FC<RecordingWaveformProps> = ({
 };
 
 export default RecordingWaveform;
+

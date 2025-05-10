@@ -132,3 +132,4 @@ const RecordingPreview: React.FC<RecordingPreviewProps> = ({
 };
 
 export default RecordingPreview;
+
