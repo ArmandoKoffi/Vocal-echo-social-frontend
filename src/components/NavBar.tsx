@@ -101,11 +101,11 @@ const NavBar = () => {
                 variant="ghost"
                 size="icon"
                 className={`rounded-full ${
-                  isActive("/")
+                  isActive("/home")
                     ? "bg-voicify-orange text-white"
                     : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                 }`}
-                onClick={() => navigate("/")}
+                onClick={() => navigate("/home")}
               >
                 <Home size={20} />
               </Button>
@@ -132,7 +132,7 @@ const NavBar = () => {
                   size="icon"
                   className={`rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 ${
                     isActive("/notifications") && "bg-voicify-orange text-white"
-                  }`}
+                  } relative`}
                 >
                   <Bell size={20} />
                   {unreadNotificationsCount > 0 && (
@@ -223,6 +223,28 @@ const NavBar = () => {
               </Button>
             </motion.div>
 
+            {/* Icône de notification mobile avec badge */}
+            <motion.div whileTap={{ scale: 0.98 }}>
+              <Link to="/notifications">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                    isActive("/notifications") && "bg-voicify-orange text-white"
+                  } relative`}
+                >
+                  <Bell size={20} />
+                  {unreadNotificationsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs px-1.5 min-w-5 h-5 flex items-center justify-center">
+                      {unreadNotificationsCount > 9
+                        ? "9+"
+                        : unreadNotificationsCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
+            </motion.div>
+
             <Sheet>
               <SheetTrigger asChild>
                 <motion.div whileTap={{ scale: 0.98 }}>
@@ -262,9 +284,9 @@ const NavBar = () => {
                   </div>
 
                   <Link
-                    to="/"
+                    to="/home"
                     className={`px-3 py-2 rounded-md font-medium flex items-center gap-2 ${
-                      isActive("/")
+                      isActive("/home")
                         ? "text-voicify-orange font-semibold bg-orange-50 dark:bg-orange-900/20"
                         : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                     } transition-colors`}
