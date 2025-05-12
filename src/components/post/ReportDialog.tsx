@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Dialog,
@@ -19,6 +20,10 @@ const ReportDialog: React.FC<ReportDialogProps> = ({
   onOpenChange,
   postId,
 }) => {
+  const handleSuccess = () => {
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -30,7 +35,7 @@ const ReportDialog: React.FC<ReportDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <ReportForm postId={postId} />
+        <ReportForm postId={postId} onSuccess={handleSuccess} />
       </DialogContent>
     </Dialog>
   );

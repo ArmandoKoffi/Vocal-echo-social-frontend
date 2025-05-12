@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -5,21 +6,22 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { createReport } from "@/api/reportsApi";
 
 interface ReportFormProps {
   postId: string;
+  onSuccess?: () => void;
 }
 
 const reportReasons = [
-  { id: "inappropriate", label: "Contenu inapproprié" },
-  { id: "harassment", label: "Harcèlement" },
-  { id: "violence", label: "Incitation à la violence" },
-  { id: "hate", label: "Discours haineux" },
-  { id: "spam", label: "Spam" },
-  { id: "other", label: "Autre raison" },
+  { id: "Contenu inapproprié", label: "Contenu inapproprié" },
+  { id: "Harcèlement", label: "Harcèlement" },
+  { id: "Spam", label: "Spam" },
+  { id: "Discours haineux", label: "Discours haineux" },
+  { id: "Autre", label: "Autre raison" },
 ];
 
-const ReportForm: React.FC<ReportFormProps> = ({ postId }) => {
+const ReportForm: React.FC<ReportFormProps> = ({ postId, onSuccess }) => {
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,19 +41,29 @@ const ReportForm: React.FC<ReportFormProps> = ({ postId }) => {
 
     setIsSubmitting(true);
 
-    // Simulate an API call
-    setTimeout(() => {
+    try {
+      await createReport({
+        postId,
+        reason,
+        details: details || undefined,
+      });
+
       toast({
         title: "Signalement envoyé",
         description:
           "Merci d'avoir signalé ce contenu. Notre équipe va l'examiner rapidement.",
       });
 
+      onSuccess?.();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'envoi du signalement.",
+        variant: "destructive",
+      });
+    } finally {
       setIsSubmitting(false);
-
-      // Close the dialog (in a real application, you would use a more elegant approach)
-      document.body.click(); // This simulates clicking outside the dialog to close it
-    }, 1000);
+    }
   };
 
   return (
