@@ -9,7 +9,7 @@ export interface CreateReportRequest {
 
 export const createReport = async (data: CreateReportRequest) => {
   try {
-    const response = await api.post("/api/reports", data);
+    const response = await api.post("/reports", data);
     return response.data;
   } catch (error) {
     console.error("Error creating report:", error);
