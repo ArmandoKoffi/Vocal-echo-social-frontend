@@ -469,19 +469,34 @@ const AdminDashboard = () => {
       }
     };
 
+    // Chargement initial
     fetchAdminData();
 
     if (socket) {
       socket.emit("getOnlineUsers");
+
+      // Configurer les mises à jour automatiques et les écouteurs d'événements
+      const refreshData = async () => {
+        await fetchAdminData(); // Utilise fetchAdminData qui gère déjà le loading/error
+      };
+
+      // Rafraîchir toutes les 10 secondes
+      const interval = setInterval(refreshData, 10000);
+
+      // Écouter les événements de mise à jour
+      socket.on("reportUpdated", refreshData);
+      socket.on("userUpdated", refreshData);
+      socket.on("onlineUsers", (userIds: string[]) => {
+        setOnlineUsers(userIds);
+      });
+
+      return () => {
+        clearInterval(interval);
+        socket.off("reportUpdated", refreshData);
+        socket.off("userUpdated", refreshData);
+        socket.off("onlineUsers");
+      };
     }
-
-    const refreshInterval = setInterval(() => {
-      fetchStats();
-    }, 30000);
-
-    return () => {
-      clearInterval(refreshInterval);
-    };
   }, [toast, socket, fetchReports, fetchStats, fetchUsers]);
 
   const filteredReports = filterStatus
