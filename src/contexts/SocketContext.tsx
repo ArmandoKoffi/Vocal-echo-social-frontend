@@ -10,6 +10,23 @@ import { useAuth } from "./AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Notification } from "@/api/notificationsApi";
 import { useNavigate } from "react-router-dom";
+import { Post, Comment } from "@/api/postsApi";
+
+interface PostAction {
+  post: Post;
+  action: "create" | "update" | "delete";
+}
+
+interface CommentAction {
+  postId: string;
+  comment: Comment;
+}
+
+interface LikeAction {
+  postId: string;
+  likes: number;
+  userId: string;
+}
 
 interface SocketContextProps {
   socket: Socket | null;
@@ -17,6 +34,15 @@ interface SocketContextProps {
   unreadNotificationsCount: number;
   setUnreadNotificationsCount: React.Dispatch<React.SetStateAction<number>>;
   onlineUsers: string[];
+  // Ajout des nouveaux callbacks
+  onPostAction: (callback: (data: PostAction) => void) => void;
+  onCommentAdded: (callback: (data: CommentAction) => void) => void;
+  onLikeUpdated: (callback: (data: LikeAction) => void) => void;
+  emitPostCreated: (post: Post) => void;
+  emitPostUpdated: (post: Post) => void;
+  emitPostDeleted: (postId: string) => void;
+  emitCommentAdded: (postId: string, comment: Comment) => void;
+  emitLikeUpdated: (postId: string, likes: number, userId: string) => void;
 }
 
 export const SocketContext = createContext<SocketContextProps>({
@@ -25,6 +51,15 @@ export const SocketContext = createContext<SocketContextProps>({
   unreadNotificationsCount: 0,
   setUnreadNotificationsCount: () => {},
   onlineUsers: [],
+  // Initialisation des nouveaux callbacks
+  onPostAction: () => {},
+  onCommentAdded: () => {},
+  onLikeUpdated: () => {},
+  emitPostCreated: () => {},
+  emitPostUpdated: () => {},
+  emitPostDeleted: () => {},
+  emitCommentAdded: () => {},
+  emitLikeUpdated: () => {},
 });
 
 export const useSocket = () => useContext(SocketContext);
@@ -97,6 +132,87 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [isAuthenticated, userId, toast, navigate]);
 
+  // Implémentation des nouvelles fonctions pour les callbacks
+  const onPostAction = (callback: (data: PostAction) => void) => {
+    if (!socket) return;
+    
+    // Création d'un post
+    socket.on("post:created", (post: Post) => {
+      callback({ post, action: "create" });
+    });
+    
+    // Mise à jour d'un post
+    socket.on("post:updated", (post: Post) => {
+      callback({ post, action: "update" });
+    });
+    
+    // Suppression d'un post
+    socket.on("post:deleted", (postId: string) => {
+      callback({ post: { id: postId } as Post, action: "delete" });
+    });
+    
+    return () => {
+      socket.off("post:created");
+      socket.off("post:updated");
+      socket.off("post:deleted");
+    };
+  };
+  
+  const onCommentAdded = (callback: (data: CommentAction) => void) => {
+    if (!socket) return;
+    
+    socket.on("comment:created", (data: CommentAction) => {
+      callback(data);
+    });
+    
+    return () => {
+      socket.off("comment:created");
+    };
+  };
+  
+  const onLikeUpdated = (callback: (data: LikeAction) => void) => {
+    if (!socket) return;
+    
+    socket.on("post:liked", (data: LikeAction) => {
+      callback(data);
+    });
+    
+    return () => {
+      socket.off("post:liked");
+    };
+  };
+  
+  // Fonctions pour émettre des événements
+  const emitPostCreated = (post: Post) => {
+    if (socket && isConnected) {
+      socket.emit("post:create", post);
+    }
+  };
+  
+  const emitPostUpdated = (post: Post) => {
+    if (socket && isConnected) {
+      socket.emit("post:update", post);
+    }
+  };
+  
+  const emitPostDeleted = (postId: string) => {
+    if (socket && isConnected) {
+      socket.emit("post:delete", postId);
+    }
+  };
+  
+  const emitCommentAdded = (postId: string, comment: Comment) => {
+    if (socket && isConnected) {
+      socket.emit("comment:create", { postId, comment });
+    }
+  };
+  
+  const emitLikeUpdated = (postId: string, likes: number, userId: string) => {
+    if (socket && isConnected) {
+      socket.emit("post:like", { postId, likes, userId });
+    }
+  };
+
   const contextValue = useMemo(
     () => ({
       socket,
@@ -104,6 +220,15 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
       unreadNotificationsCount,
       setUnreadNotificationsCount,
       onlineUsers,
+      // Ajout des nouvelles fonctions
+      onPostAction,
+      onCommentAdded,
+      onLikeUpdated,
+      emitPostCreated,
+      emitPostUpdated,
+      emitPostDeleted,
+      emitCommentAdded,
+      emitLikeUpdated
     }),
     [socket, isConnected, unreadNotificationsCount, onlineUsers]
   );
@@ -114,4 +239,3 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
     </SocketContext.Provider>
   );
 };
-
