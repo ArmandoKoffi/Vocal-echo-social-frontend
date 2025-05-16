@@ -5,6 +5,7 @@ import RecordButton from "@/components/RecordButton";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSocket } from "@/contexts/SocketContext";
 
 interface Comment {
   id: string;
@@ -23,6 +24,14 @@ const Index = () => {
   const { token } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
   const [showAllPosts, setShowAllPosts] = useState(false);
+  
+  // Utilisation du contexte Socket
+  const { 
+    isConnected, 
+    onPostAction, 
+    onCommentAdded, 
+    onLikeUpdated 
+  } = useSocket();
 
   const fetchPosts = async () => {
     setIsLoading(true);
@@ -53,7 +62,74 @@ const Index = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, refreshKey]);
 
+  // Effet pour écouter les événements Socket.io en temps réel
+  useEffect(() => {
+    if (isConnected) {
+      // Gestion des posts (création, mise à jour, suppression)
+      const handlePostAction = (data) => {
+        switch (data.action) {
+          case 'create':
+            // Ajouter le nouveau post en haut de la liste
+            setPosts(prevPosts => [data.post, ...prevPosts]);
+            break;
+          case 'update':
+            // Mettre à jour un post existant
+            setPosts(prevPosts => 
+              prevPosts.map(post => 
+                post.id === data.post.id ? data.post : post
+              )
+            );
+            break;
+          case 'delete':
+            // Supprimer un post
+            setPosts(prevPosts => 
+              prevPosts.filter(post => post.id !== data.post.id)
+            );
+            break;
+          default:
+            break;
+        }
+      };
+
+      // Gestion des nouveaux commentaires
+      const handleCommentAdded = (data) => {
+        setPosts(prevPosts =>
+          prevPosts.map(post =>
+            post.id === data.postId
+              ? {
+                  ...post,
+                  comments: [...post.comments, data.comment]
+                }
+              : post
+          )
+        );
+      };
+
+      // Gestion des likes
+      const handleLikeUpdated = (data) => {
+        setPosts(prevPosts =>
+          prevPosts.map(post =>
+            post.id === data.postId
+              ? {
+                  ...post,
+                  likes: data.likes,
+                  hasLiked: post.hasLiked // Logique de basculement à compléter en fonction de l'utilisateur
+                }
+              : post
+          )
+        );
+      };
+
+      // Abonnement aux événements socket
+      onPostAction(handlePostAction);
+      onCommentAdded(handleCommentAdded);
+      onLikeUpdated(handleLikeUpdated);
+    }
+  }, [isConnected, onPostAction, onCommentAdded, onLikeUpdated]);
+
   const handlePostCreated = () => {
+    // On pourrait potentiellement retirer cette fonction car les posts seront
+    // désormais ajoutés via les événements socket en temps réel
     setRefreshKey((prev) => prev + 1);
   };
 
@@ -78,7 +154,6 @@ const Index = () => {
           ? {
               ...post,
               comments: [...post.comments, newComment],
-              commentsCount: post.comments.length + 1,
             }
           : post
       )
@@ -115,6 +190,11 @@ const Index = () => {
           <h1 className="text-2xl font-bold dark:text-white">
             Fil d'actualité
           </h1>
+          {isConnected && (
+            <span className="text-xs text-green-500 font-medium px-2 py-1 bg-green-50 rounded-full dark:bg-green-900">
+              Connecté en temps réel
+            </span>
+          )}
         </motion.div>
 
         {isLoading ? (
@@ -197,4 +277,3 @@ const Index = () => {
 };
 
 export default Index;
-

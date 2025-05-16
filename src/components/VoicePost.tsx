@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import AudioPlayer from "./AudioPlayer";
@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import CommentsModal from "./CommentsModal";
+import { useSocket } from "@/contexts/SocketContext";
 
 export interface Comment {
   id: string;
@@ -85,6 +86,16 @@ const VoicePost: React.FC<VoicePostProps> = ({
   const [isUpdating, setIsUpdating] = useState(false);
   const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
   const { toast } = useToast();
+  
+  // Utilisation du contexte Socket
+  const { emitLikeUpdated, emitCommentAdded, emitPostUpdated, emitPostDeleted } = useSocket();
+
+  // Mettre à jour l'état local quand les props changent depuis le parent
+  useEffect(() => {
+    setLikesCount(likes);
+    setIsLiked(hasLiked);
+    setPostComments(comments);
+  }, [likes, hasLiked, comments]);
 
   const handleLike = async () => {
     if (isLiking) return;
@@ -102,6 +113,9 @@ const VoicePost: React.FC<VoicePostProps> = ({
       setIsLiked(result.hasLiked);
       setLikesCount(result.likes);
       onLikeUpdate?.(id, result.likes, result.hasLiked);
+      
+      // Émettre l'événement de mise à jour des likes via Socket.io
+      emitLikeUpdated(id, result.likes, userId);
     } catch (error) {
       setIsLiked(hasLiked);
       setLikesCount(likes);
@@ -138,6 +152,9 @@ const VoicePost: React.FC<VoicePostProps> = ({
       if (onPostUpdated) {
         onPostUpdated(updatedPost);
       }
+      
+      // Émettre l'événement de mise à jour du post via Socket.io
+      emitPostUpdated(updatedPost);
 
       toast({
         title: "Post mis à jour",
@@ -195,6 +212,9 @@ const VoicePost: React.FC<VoicePostProps> = ({
       if (onPostDeleted) {
         onPostDeleted(id);
       }
+      
+      // Émettre l'événement de suppression du post via Socket.io
+      emitPostDeleted(id);
 
       setIsDeleteDialogOpen(false);
     } catch (error) {
@@ -226,6 +246,9 @@ const VoicePost: React.FC<VoicePostProps> = ({
       const result = await commentOnPost(id, formData);
       setPostComments((prev) => [...prev, result]);
       onCommentAdded?.(result);
+      
+      // Émettre l'événement de commentaire ajouté via Socket.io
+      emitCommentAdded(id, result);
     } catch (error) {
       toast({
         title: "Erreur",
