@@ -238,11 +238,10 @@ const VoicePost: React.FC<VoicePostProps> = ({
   const handleCommentAdded = async (
     comment: Comment & { audioFile?: File }
   ) => {
-    // Empêcher les soumissions multiples
     if (isSubmittingComment) return;
-    
+
     setIsSubmittingComment(true);
-    
+
     try {
       const formData = new FormData();
       if (comment.content) formData.append("content", comment.content);
@@ -251,21 +250,10 @@ const VoicePost: React.FC<VoicePostProps> = ({
         formData.append("audioDuration", String(comment.audioDuration || 0));
       }
 
-      const result = await commentOnPost(id, formData);
-      
-      // Mettre à jour l'état local avec le nouveau commentaire
-      // L'événement socket est émis via l'API, alors pas besoin de mettre à jour localement
-      // car on recevra l'événement, sauf si c'est pour une mise à jour optimiste
-      if (user && user.id === result.userId) {
-        // Mettre à jour l'UI localement seulement pour nos propres commentaires
-        // Cela évite la duplication quand on reçoit l'événement socket plus tard
-        setPostComments((prev) => [...prev, result]);
-        onCommentAdded?.(result);
-      }
-      
-      // Émettre l'événement de commentaire ajouté via Socket.io
-      // Pas besoin de l'appeler ici car le serveur émet déjà l'événement après la création
-      // emitCommentAdded(id, result);
+      await commentOnPost(id, formData);
+
+      // Suppression de la mise à jour locale pour éviter les doublons
+      // Le commentaire sera ajouté via l'événement socket uniquement
     } catch (error) {
       toast({
         title: "Erreur",

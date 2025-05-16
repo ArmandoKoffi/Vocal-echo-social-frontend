@@ -94,19 +94,24 @@ const Index = () => {
       // Gestion des nouveaux commentaires
       const handleCommentAdded = (data) => {
         // Éviter de duplications des commentaires
-        // Vérifier si ce n'est pas l'utilisateur actuel qui a ajouté le commentaire
-        if (!user || data.comment.userId !== user.id) {
-          setPosts(prevPosts =>
-            prevPosts.map(post =>
-              post.id === data.postId
-                ? {
-                    ...post,
-                    comments: [...post.comments, data.comment]
-                  }
-                : post
-            )
-          );
-        }
+        setPosts((prevPosts) =>
+          prevPosts.map((post) => {
+            if (post.id === data.postId) {
+              // Vérifier si le commentaire existe déjà
+              const hasComment = post.comments.some(
+                (c) => c.id === data.comment.id
+              );
+
+              if (!hasComment) {
+                return {
+                  ...post,
+                  comments: [...post.comments, data.comment],
+                };
+              }
+            }
+            return post;
+          })
+        );
       };
 
       // Gestion des likes
