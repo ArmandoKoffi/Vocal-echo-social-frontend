@@ -366,7 +366,16 @@ const VoicePost: React.FC<VoicePostProps> = ({
 
       {isCommentsOpen && (
         <div className="border-t border-gray-100 dark:border-gray-700 p-4">
-          <CommentList comments={postComments.slice(0, 2)} />
+          {/* Triez les commentaires par date décroissante avant d'afficher les 2 premiers */}
+          <CommentList
+            comments={[...postComments]
+              .sort(
+                (a, b) =>
+                  new Date(b.timestamp).getTime() -
+                  new Date(a.timestamp).getTime()
+              )
+              .slice(0, 2)}
+          />
 
           {postComments.length > 2 && (
             <Button
@@ -385,7 +394,11 @@ const VoicePost: React.FC<VoicePostProps> = ({
       <CommentsModal
         isOpen={isCommentsModalOpen}
         onOpenChange={setIsCommentsModalOpen}
-        comments={postComments}
+        // Triez également les commentaires dans le modal si vous voulez les avoir dans l'ordre chronologique inverse
+        comments={[...postComments].sort(
+          (a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        )}
       />
 
       <ShareDialog
