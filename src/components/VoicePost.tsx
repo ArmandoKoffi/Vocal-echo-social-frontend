@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import CommentsModal from "./CommentsModal";
 import { useSocket } from "@/contexts/SocketContext";
+import { useAuth } from "@/contexts/AuthContext"; // Ajout de useAuth pour identifier l'utilisateur actuel
 
 export interface Comment {
   id: string;
@@ -85,7 +86,9 @@ const VoicePost: React.FC<VoicePostProps> = ({
   const [newAudioFile, setNewAudioFile] = useState<File | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false); // Nouvel état pour éviter les soumissions multiples
   const { toast } = useToast();
+  const { user } = useAuth(); // Récupération des infos utilisateur pour identifier ses propres commentaires
   
   // Utilisation du contexte Socket
   const { emitLikeUpdated, emitCommentAdded, emitPostUpdated, emitPostDeleted } = useSocket();
@@ -235,26 +238,42 @@ const VoicePost: React.FC<VoicePostProps> = ({
   const handleCommentAdded = async (
     comment: Comment & { audioFile?: File }
   ) => {
-    const formData = new FormData();
-    if (comment.content) formData.append("content", comment.content);
-    if (comment.audioFile) {
-      formData.append("audio", comment.audioFile);
-      formData.append("audioDuration", String(comment.audioDuration || 0));
-    }
-
+    // Empêcher les soumissions multiples
+    if (isSubmittingComment) return;
+    
+    setIsSubmittingComment(true);
+    
     try {
+      const formData = new FormData();
+      if (comment.content) formData.append("content", comment.content);
+      if (comment.audioFile) {
+        formData.append("audio", comment.audioFile);
+        formData.append("audioDuration", String(comment.audioDuration || 0));
+      }
+
       const result = await commentOnPost(id, formData);
-      setPostComments((prev) => [...prev, result]);
-      onCommentAdded?.(result);
+      
+      // Mettre à jour l'état local avec le nouveau commentaire
+      // L'événement socket est émis via l'API, alors pas besoin de mettre à jour localement
+      // car on recevra l'événement, sauf si c'est pour une mise à jour optimiste
+      if (user && user.id === result.userId) {
+        // Mettre à jour l'UI localement seulement pour nos propres commentaires
+        // Cela évite la duplication quand on reçoit l'événement socket plus tard
+        setPostComments((prev) => [...prev, result]);
+        onCommentAdded?.(result);
+      }
       
       // Émettre l'événement de commentaire ajouté via Socket.io
-      emitCommentAdded(id, result);
+      // Pas besoin de l'appeler ici car le serveur émet déjà l'événement après la création
+      // emitCommentAdded(id, result);
     } catch (error) {
       toast({
         title: "Erreur",
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setIsSubmittingComment(false);
     }
   };
 

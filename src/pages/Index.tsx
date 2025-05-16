@@ -21,7 +21,7 @@ interface Comment {
 const Index = () => {
   const [posts, setPosts] = useState<VoicePostProps[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
   const [showAllPosts, setShowAllPosts] = useState(false);
   
@@ -93,16 +93,20 @@ const Index = () => {
 
       // Gestion des nouveaux commentaires
       const handleCommentAdded = (data) => {
-        setPosts(prevPosts =>
-          prevPosts.map(post =>
-            post.id === data.postId
-              ? {
-                  ...post,
-                  comments: [...post.comments, data.comment]
-                }
-              : post
-          )
-        );
+        // Éviter de duplications des commentaires
+        // Vérifier si ce n'est pas l'utilisateur actuel qui a ajouté le commentaire
+        if (!user || data.comment.userId !== user.id) {
+          setPosts(prevPosts =>
+            prevPosts.map(post =>
+              post.id === data.postId
+                ? {
+                    ...post,
+                    comments: [...post.comments, data.comment]
+                  }
+                : post
+            )
+          );
+        }
       };
 
       // Gestion des likes
@@ -113,7 +117,7 @@ const Index = () => {
               ? {
                   ...post,
                   likes: data.likes,
-                  hasLiked: post.hasLiked // Logique de basculement à compléter en fonction de l'utilisateur
+                  hasLiked: post.userId === data.userId ? !post.hasLiked : post.hasLiked
                 }
               : post
           )
@@ -124,8 +128,14 @@ const Index = () => {
       onPostAction(handlePostAction);
       onCommentAdded(handleCommentAdded);
       onLikeUpdated(handleLikeUpdated);
+
+      // Nettoyage des abonnements
+      return () => {
+        // Pas besoin d'explicitement se désabonner car les fonctions de nettoyage
+        // sont gérées dans le contexte SocketContext
+      };
     }
-  }, [isConnected, onPostAction, onCommentAdded, onLikeUpdated]);
+  }, [isConnected, onPostAction, onCommentAdded, onLikeUpdated, user]);
 
   const handlePostCreated = () => {
     // On pourrait potentiellement retirer cette fonction car les posts seront
@@ -148,16 +158,9 @@ const Index = () => {
   };
 
   const handleCommentAdded = (postId: string, newComment: Comment) => {
-    setPosts((prevPosts) =>
-      prevPosts.map((post) =>
-        post.id === postId
-          ? {
-              ...post,
-              comments: [...post.comments, newComment],
-            }
-          : post
-      )
-    );
+    // Cette fonction peut être simplifiée car nous gérons désormais les commentaires
+    // via les événements socket. Elle reste pour la compatibilité.
+    // Les commentaires de l'utilisateur actuel sont ajoutés directement dans VoicePost.tsx
   };
 
   const handlePostDeleted = (postId: string) => {
