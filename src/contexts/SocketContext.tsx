@@ -103,6 +103,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsConnected(false);
       });
 
+      newSocket.on("notification:read", ({ userId: notifiedUserId }) => {
+        if (notifiedUserId === userId) {
+          setUnreadNotificationsCount((prev) => Math.max(0, prev - 1));
+        }
+      });
+
       newSocket.on("notification", (notification: Notification) => {
         console.log("Notification reçue:", notification);
         setUnreadNotificationsCount((prev) => prev + 1);
