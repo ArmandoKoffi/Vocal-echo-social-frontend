@@ -31,7 +31,7 @@ const NotificationDetail = () => {
         // Marquer la notification comme lue
         if (data && !data.read) {
           await markNotificationAsRead(id);
-          setUnreadNotificationsCount(prev => Math.max(0, prev - 1));
+          setUnreadNotificationsCount(prev => notification?.read ? prev : Math.max(0, prev - 1));
         }
 
         if (data.post) {

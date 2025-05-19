@@ -36,7 +36,7 @@ const Notifications = () => {
 
   const markAllAsRead = async () => {
     try {
-      await api.post("/notifications/mark-all-read");
+      await api.put("/notifications/read-all");
       setNotifications((prev) =>
         prev.map((notif) => ({ ...notif, read: true }))
       );
